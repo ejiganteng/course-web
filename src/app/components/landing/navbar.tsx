@@ -1,4 +1,3 @@
-// FloatingNavbar.jsx
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -52,10 +51,10 @@ export default function NavbarLand() {
       initial={{ y: -100 }}
       animate={{ y: 0 }}
       transition={{ duration: 0.3, ease: "easeOut" }}
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 mx-6 lg:mx-9 mt-5 rounded-3xl ${
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 mx-6 lg:mx-9 mt-5 rounded-3xl py-4 ${
         scrolled 
-          ? 'bg-white/90 backdrop-blur-md shadow-lg py-3' 
-          : 'bg-gray-200 py-4'
+          ? 'bg-white/90 backdrop-blur-md shadow-lg' 
+          : 'bg-gray-200'
       }`}
     >
       <AnimatePresence>
@@ -69,10 +68,8 @@ export default function NavbarLand() {
           />
         )}
       </AnimatePresence>
-
       <div className="container mx-auto px-6">
         <div className="flex items-center justify-between">
-          {/* Logo menggunakan Heroicon */}
           <motion.div 
             className="flex items-center"
             whileHover={{ scale: 1.05 }}
@@ -93,7 +90,6 @@ export default function NavbarLand() {
                 <span className="absolute left-0 bottom-0 w-0 h-0.5 bg-purple-600 transition-all group-hover:w-full"></span>
               </motion.a>
             ))}
-            
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
@@ -102,7 +98,6 @@ export default function NavbarLand() {
               Masuk
             </motion.button>
           </div>
-
           <div className="md:hidden">
             <motion.button
               whileTap={{ scale: 0.95 }}
@@ -119,7 +114,6 @@ export default function NavbarLand() {
           </div>
         </div>
       </div>
-
       <AnimatePresence>
         {mobileMenuOpen && (
           <motion.div
@@ -129,7 +123,7 @@ export default function NavbarLand() {
             exit="closed"
             className="fixed top-0 left-0 h-full w-64 bg-white/95 backdrop-blur-md z-50 shadow-xl p-6 flex flex-col space-y-6"
           >
-            <div className="pt-8">
+            <div className="pt-2">
               {['Beranda', 'Kursus', 'Tentang', 'Kontak'].map((item, index) => (
                 <motion.a
                   key={index}
@@ -142,7 +136,6 @@ export default function NavbarLand() {
                 </motion.a>
               ))}
             </div>
-            
             <div className="mt-auto pt-4 border-t border-gray-200">
               <motion.button
                 whileHover={{ scale: 1.02 }}
