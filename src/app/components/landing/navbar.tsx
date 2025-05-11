@@ -51,11 +51,7 @@ export default function NavbarLand() {
       initial={{ y: -100 }}
       animate={{ y: 0 }}
       transition={{ duration: 0.3, ease: "easeOut" }}
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 mx-7 lg:mx-20 mt-5 rounded-3xl py-4 ${
-        scrolled 
-          ? 'bg-gray-100 shadow-lg' 
-          : 'bg-white'
-      }`}
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 mx-7 lg:mx-20 mt-5 rounded-3xl py-4 bg-gray-100 shadow-lg`}
     >
       <AnimatePresence>
         {mobileMenuOpen && (

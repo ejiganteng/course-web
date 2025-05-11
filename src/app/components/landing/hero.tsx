@@ -75,34 +75,26 @@ export default function ImprovedHeroLand() {
       id: 'students',
       count: useCounter(12500),
       label: 'Students',
-      bgColor: 'bg-indigo-500/20',
-      textColor: 'text-indigo-300'
     },
     {
       id: 'courses',
       count: useCounter(150),
       label: 'Courses',
-      bgColor: 'bg-purple-500/20',
-      textColor: 'text-purple-300'
     },
     {
       id: 'hours',
       count: useCounter(1800),
       label: 'Hours Content',
-      bgColor: 'bg-blue-500/20',
-      textColor: 'text-blue-300'
     },
     {
       id: 'certificates',
       count: useCounter(8700),
       label: 'Certificates',
-      bgColor: 'bg-pink-500/20',
-      textColor: 'text-pink-300'
     }
   ];
 
   return (
-    <section className="relative h-screen flex flex-col overflow-hidden pt-16">
+    <section className="relative min-h-screen flex flex-col overflow-hidden pt-16">
       {/* Background elements */}
       <div className="absolute inset-0 bg-gradient-to-br from-gray-800/90 via-black to-purple-950/60 z-0">
         <motion.div
@@ -156,6 +148,7 @@ export default function ImprovedHeroLand() {
           }}
         />
 
+        {/* Mobile hero image with improved positioning */}
         <motion.div
           className="lg:hidden absolute inset-0 flex items-center justify-center opacity-20"
           initial={{ opacity: 0 }}
@@ -165,25 +158,28 @@ export default function ImprovedHeroLand() {
           <Image
             src={Heroimage}
             alt="Learning illustration"
-            className="w-[200px] h-[200px] transform -translate-y-20 object-contain"
+            className="w-[250px] h-[250px] object-contain"
             placeholder="blur"
+            style={{
+              filter: "drop-shadow(0 0 15px rgba(167, 139, 250, 0.25))",
+            }}
           />
         </motion.div>
       </div>
 
       {/* Main content */}
       <div className="flex-grow flex items-center relative z-10">
-        <div className="container mx-auto px-8 sm:px-20">
+        <div className="container mx-auto px-8 lg:px-20">
           <div className="flex flex-col lg:flex-row">
             <motion.div
               variants={containerVariants}
               initial="hidden"
               animate="visible"
-              className="w-full lg:w-1/2 text-left lg:pr-12 mb-8 lg:mb-0 relative z-20"
+              className="w-full lg:w-1/2 text-left lg:pr-12 mb-12 lg:mb-0 relative z-20"
             >
               {/* Main heading with enhanced gradient */}
               <motion.div variants={childVariants} className="relative">
-                <h1 className="text-5xl lg:text-7xl font-extrabold mb-4 lg:mb-6 text-white leading-tight">
+                <h1 className="text-4xl sm:text-5xl lg:text-7xl font-extrabold mb-4 lg:mb-6 text-white leading-tight">
                   Master Web Development
                   <span className="block mt-2">
                     from scratch
@@ -194,24 +190,24 @@ export default function ImprovedHeroLand() {
               {/* Improved subheading */}
               <motion.p
                 variants={childVariants}
-                className="lg:text-base text-sm font-semibold text-gray-300 mb-6 leading-relaxed max-w-lg"
+                className="text-base lg:text-base font-semibold text-gray-300 mb-8 leading-relaxed max-w-lg"
               >
                 Learn the latest skills from professional mentors
                 in various fields of technology and business with 
                 our interactive learning platform.
               </motion.p>
 
-              {/* Enhanced buttons */}
+              {/* Enhanced buttons with better mobile layout */}
               <motion.div
                 variants={childVariants}
-                className="flex gap-4 lg:justify-start lg:text-base text-sm"
+                className="flex flex-col sm:flex-row gap-4 lg:justify-start"
               >
                 <motion.button
                   whileHover={{
                     scale: 1.05,
                   }}
                   whileTap={{ scale: 0.95 }}
-                  className="px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl text-white font-bold transition-all flex items-center group w-full sm:w-auto"
+                  className="px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl text-white font-bold transition-all flex items-center justify-center group w-full sm:w-auto"
                 >
                   Mulai Belajar
                   <motion.span
@@ -225,7 +221,7 @@ export default function ImprovedHeroLand() {
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  className="px-6 py-3 rounded-lg font-bold bg-white backdrop-blur-sm transition-all flex items-center w-full sm:w-auto"
+                  className="px-6 py-3 rounded-lg font-bold bg-white backdrop-blur-sm transition-all flex items-center justify-center w-full sm:w-auto"
                 >
                   <RocketLaunchIcon className="w-5 h-5 mr-2" />
                   View Courses
@@ -241,7 +237,6 @@ export default function ImprovedHeroLand() {
               className="w-full lg:w-1/2 justify-center items-center hidden lg:flex relative z-10"
             >
               <div className="relative">
-                {/* Glow effect behind image */}
                   <Image
                     src={Heroimage}
                     alt="Learning illustration"
@@ -257,24 +252,25 @@ export default function ImprovedHeroLand() {
         </div>
       </div>
 
-      {/* Stats Counter Section - Now using the stats array */}
       <motion.div
         initial="hidden"
         animate="visible"
         variants={statsVariants}
         className="relative z-20 mb-8"
       >
-        <div className="container mx-auto px-8 sm:px-21">
+        <div className="container mx-auto px-4 sm:px-8 md:px-12 lg:px-20">
           <div className="flex flex-col lg:flex-row">
-            <div className="w-full flex justify-between">
-              {statsData.map((stat) => (
-                <div key={stat.id} className="text-center">
-                  <h3 className="text-3xl lg:text-5xl font-bold text-white mb-0">
-                    {stat.count.toLocaleString()}+
-                  </h3>
-                  <p className="text-gray-400 text-xs lg:text-lg">{stat.label}</p>
-                </div>
-              ))}
+            <div className="w-full">
+              <div className="grid grid-cols-2 lg:flex lg:justify-between gap-6 lg:gap-0">
+                {statsData.map((stat) => (
+                  <div key={stat.id} className="text-center">
+                    <h3 className="text-4xl lg:text-5xl font-bold text-white mb-0">
+                      {stat.count.toLocaleString()}+
+                    </h3>
+                    <p className="text-gray-400 text-lg lg:text-xl">{stat.label}</p>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
