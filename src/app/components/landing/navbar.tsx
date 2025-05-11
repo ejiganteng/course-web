@@ -51,10 +51,10 @@ export default function NavbarLand() {
       initial={{ y: -100 }}
       animate={{ y: 0 }}
       transition={{ duration: 0.3, ease: "easeOut" }}
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 mx-6 lg:mx-9 mt-5 rounded-3xl py-4 ${
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 mx-7 lg:mx-20 mt-5 rounded-3xl py-4 ${
         scrolled 
-          ? 'bg-white/90 backdrop-blur-md shadow-lg' 
-          : 'bg-gray-200'
+          ? 'bg-gray-100 shadow-lg' 
+          : 'bg-white'
       }`}
     >
       <AnimatePresence>
@@ -75,7 +75,7 @@ export default function NavbarLand() {
             whileHover={{ scale: 1.05 }}
           >
             <AcademicCapIcon className="w-8 h-8 text-purple-700" />
-            <span className="ml-2 text-xl lg:text-2xl font-bold text-gray-800">CoursePlatform</span>
+            <span className="ml-2 text-lg lg:text-2xl font-bold text-gray-800">CoursePlatform</span>
           </motion.div>
 
           <div className="hidden md:flex items-center space-x-8">
