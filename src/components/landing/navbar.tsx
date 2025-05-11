@@ -1,53 +1,58 @@
-'use client'
+"use client";
 
-import { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Bars3Icon, XMarkIcon, AcademicCapIcon } from '@heroicons/react/24/solid'
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Bars3Icon,
+  XMarkIcon,
+  AcademicCapIcon,
+} from "@heroicons/react/24/solid";
+import Link from "next/link";
 
 export default function NavbarLand() {
-  const [scrolled, setScrolled] = useState(false)
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [scrolled, setScrolled] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
-      const scrollTop = window.scrollY
-      setScrolled(scrollTop > 20)
-    }
+      const scrollTop = window.scrollY;
+      setScrolled(scrollTop > 20);
+    };
 
-    window.addEventListener('scroll', handleScroll)
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [])
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth > 768) setMobileMenuOpen(false)
-    }
+      if (window.innerWidth > 768) setMobileMenuOpen(false);
+    };
 
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
-  }, [])
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   const mobileMenuVariants = {
     closed: {
       opacity: 0,
-      x: '-100%',
+      x: "-100%",
       transition: {
         duration: 0.3,
-        ease: 'easeInOut'
-      }
+        ease: "easeInOut",
+      },
     },
     open: {
       opacity: 1,
       x: 0,
       transition: {
         duration: 0.3,
-        ease: 'easeOut'
-      }
-    }
-  }
+        ease: "easeOut",
+      },
+    },
+  };
 
   return (
-    <motion.nav 
+    <motion.nav
       initial={{ y: -100 }}
       animate={{ y: 0 }}
       transition={{ duration: 0.3, ease: "easeOut" }}
@@ -66,33 +71,38 @@ export default function NavbarLand() {
       </AnimatePresence>
       <div className="container mx-auto px-6">
         <div className="flex items-center justify-between">
-          <motion.div 
+          <motion.div
             className="flex items-center"
             whileHover={{ scale: 1.05 }}
           >
             <AcademicCapIcon className="w-8 h-8 text-purple-700" />
-            <span className="ml-2 text-lg lg:text-2xl font-bold text-gray-800">CoursePlatform</span>
+            <span className="ml-2 text-lg lg:text-2xl font-bold text-gray-800">
+              CoursePlatform
+            </span>
           </motion.div>
 
           <div className="hidden md:flex items-center space-x-8">
-            {['Beranda', 'Kursus', 'Tentang', 'Kontak'].map((item, index) => (
-              <motion.a
-                key={index}
-                href="#"
-                className="text-gray-600 font-bold hover:text-purple-700 transition-colors relative group"
-                whileHover={{ y: -2 }}
-              >
-                {item}
-                <span className="absolute left-0 bottom-0 w-0 h-0.5 bg-purple-600 transition-all group-hover:w-full"></span>
-              </motion.a>
+            {["Beranda", "Kursus", "Tentang", "Kontak"].map((item) => (
+              <Link key={item} href={`/${item.toLowerCase()}`}>
+                <motion.span
+                  className="text-gray-600 font-bold hover:text-purple-700 transition-colors relative group cursor-pointer"
+                  whileHover={{ y: -2 }}
+                >
+                  {item}
+                  <span className="absolute left-0 bottom-0 w-0 h-0.5 bg-purple-600 transition-all group-hover:w-full"></span>
+                </motion.span>
+              </Link>
             ))}
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="px-5 py-2 font-bold bg-gray-950 rounded-lg text-white shadow-lg shadow-gray-500/20 hover:shadow-gray-500/40 transition-all"
-            >
-              Masuk
-            </motion.button>
+
+            <Link href="/auth">
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="px-5 py-2 font-bold bg-gray-950 rounded-lg text-white shadow-lg shadow-gray-500/20 hover:shadow-gray-500/40 transition-all"
+              >
+                Masuk
+              </motion.button>
+            </Link>
           </div>
           <div className="md:hidden">
             <motion.button
@@ -120,7 +130,7 @@ export default function NavbarLand() {
             className="fixed top-0 left-0 h-full w-64 bg-white/95 backdrop-blur-md z-50 shadow-xl p-6 flex flex-col space-y-6"
           >
             <div className="pt-2">
-              {['Beranda', 'Kursus', 'Tentang', 'Kontak'].map((item, index) => (
+              {["Beranda", "Kursus", "Tentang", "Kontak"].map((item, index) => (
                 <motion.a
                   key={index}
                   href="#"
@@ -133,18 +143,20 @@ export default function NavbarLand() {
               ))}
             </div>
             <div className="mt-auto pt-4 border-t border-gray-200">
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="w-full py-3 bg-gray-950 rounded-lg text-white font-medium shadow-lg shadow-gray-500/20 hover:shadow-gray-500/40 transition-all"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Masuk
-              </motion.button>
+              <Link href="/auth">
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="w-full py-3 bg-gray-950 rounded-lg text-white font-medium shadow-lg shadow-gray-500/20 hover:shadow-gray-500/40 transition-all"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Masuk
+                </motion.button>
+              </Link>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
     </motion.nav>
-  )
+  );
 }

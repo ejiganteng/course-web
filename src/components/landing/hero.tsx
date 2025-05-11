@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import Heroimage from "@/app/public/home-five-img.png";
+import Heroimage from "@/app/public/home-main-pic.png";
 import { motion, Variants } from "framer-motion";
 import {
   ArrowRightIcon,

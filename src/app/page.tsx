@@ -1,9 +1,9 @@
 "use client";
-import HeroLand from "./components/landing/hero";
-import NavbarLand from "./components/landing/navbar";
+import HeroLand from "../components/landing/hero";
+import NavbarLand from "../components/landing/navbar";
 import { motion, useScroll } from "framer-motion";
-import FooterLand from "./components/landing/footer";
-import KosonganLand from "./components/landing/kosongan";
+import FooterLand from "../components/landing/footer";
+import KosonganLand from "../components/landing/kosongan";
 
 export default function ScrollLinked() {
   const { scrollYProgress } = useScroll();
