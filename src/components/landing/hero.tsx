@@ -4,12 +4,8 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import Heroimage from "@/app/public/home-five-img.png";
 import { motion, Variants } from "framer-motion";
-import {
-  ArrowRightIcon,
-  RocketLaunchIcon,
-} from "@heroicons/react/24/solid";
+import { ArrowRightIcon, RocketLaunchIcon } from "@heroicons/react/24/solid";
 
-// Define types for variants
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
   visible: {
@@ -94,16 +90,18 @@ export default function ImprovedHeroLand() {
   ];
 
   return (
-    <section className="relative min-h-screen flex flex-col overflow-hidden pt-25 lg:pt-16">
+    <motion.section 
+      className="relative min-h-screen flex flex-col overflow-hidden pt-25 lg:pt-16"
+      viewport={{ margin: "-100px", once: false }}
+    >
       {/* Background elements */}
       <div className="absolute inset-0 bg-gradient-to-br from-gray-800/90 via-black to-purple-950/60 z-0">
+        {/* Animated Background Circles */}
         <motion.div
           className="absolute top-1/4 left-1/4 w-64 h-64 rounded-full blur-3xl opacity-20"
-          style={{
-            background:
-              "radial-gradient(circle, rgba(147,51,234,0.4) 0%, rgba(79,70,229,0.1) 100%)",
-          }}
-          animate={{
+          style={{ background: "radial-gradient(circle, rgba(147,51,234,0.4) 0%, rgba(79,70,229,0.1) 100%)" }}
+          initial={false}
+          whileInView={{
             scale: [1, 1.2, 1],
             opacity: [0.2, 0.4, 0.2],
           }}
@@ -112,14 +110,14 @@ export default function ImprovedHeroLand() {
             repeat: Infinity,
             ease: "easeInOut",
           }}
+          viewport={{ margin: "-100px" }}
         />
+
         <motion.div
           className="absolute top-1/3 right-1/4 w-72 h-72 rounded-full blur-3xl opacity-20"
-          style={{
-            background:
-              "radial-gradient(circle, rgba(99,102,241,0.4) 0%, rgba(67,56,202,0.1) 90%)",
-          }}
-          animate={{
+          style={{ background: "radial-gradient(circle, rgba(99,102,241,0.4) 0%, rgba(67,56,202,0.1) 90%)" }}
+          initial={false}
+          whileInView={{
             scale: [1, 1.1, 1],
             opacity: [0.2, 0.3, 0.2],
           }}
@@ -129,14 +127,14 @@ export default function ImprovedHeroLand() {
             ease: "easeInOut",
             delay: 2,
           }}
+          viewport={{ margin: "-100px" }}
         />
+
         <motion.div
           className="absolute bottom-1/4 left-1/3 w-80 h-80 rounded-full blur-3xl opacity-20"
-          style={{
-            background:
-              "radial-gradient(circle, rgba(59,130,246,0.4) 0%, rgba(43,89,219,0.1) 90%)",
-          }}
-          animate={{
+          style={{ background: "radial-gradient(circle, rgba(59,130,246,0.4) 0%, rgba(43,89,219,0.1) 90%)" }}
+          initial={false}
+          whileInView={{
             scale: [1, 1.3, 1],
             opacity: [0.2, 0.5, 0.2],
           }}
@@ -146,38 +144,38 @@ export default function ImprovedHeroLand() {
             ease: "easeInOut",
             delay: 4,
           }}
+          viewport={{ margin: "-100px" }}
         />
 
-        {/* Mobile hero image with improved positioning */}
+        {/* Mobile Hero Image */}
         <motion.div
           className="lg:hidden absolute inset-0 flex items-center justify-center opacity-20"
           initial={{ opacity: 0 }}
-          animate={{ opacity: 0.2 }}
+          whileInView={{ opacity: 0.2 }}
           transition={{ duration: 1 }}
+          viewport={{ margin: "-100px" }}
         >
           <Image
             src={Heroimage}
             alt="Learning illustration"
             className="w-[250px] h-[250px] object-contain"
             placeholder="blur"
-            style={{
-              filter: "drop-shadow(0 0 15px rgba(167, 139, 250, 0.25))",
-            }}
+            style={{ filter: "drop-shadow(0 0 15px rgba(167, 139, 250, 0.25))" }}
           />
         </motion.div>
       </div>
 
-      {/* Main content */}
+      {/* Main Content */}
       <div className="flex-grow flex items-center relative z-10">
         <div className="container mx-auto px-8 lg:px-20">
           <div className="flex flex-col lg:flex-row">
             <motion.div
               variants={containerVariants}
               initial="hidden"
-              animate="visible"
+              whileInView="visible"
+              viewport={{ margin: "-100px" }}
               className="w-full lg:w-1/2 text-left lg:pr-12 mb-12 lg:mb-0 relative z-20"
             >
-              {/* Main heading with enhanced gradient */}
               <motion.div variants={childVariants} className="relative">
                 <h1 className="text-4xl sm:text-5xl lg:text-7xl font-extrabold mb-4 lg:mb-6 text-white leading-tight">
                   Master Web Development
@@ -187,7 +185,6 @@ export default function ImprovedHeroLand() {
                 </h1>
               </motion.div>
 
-              {/* Improved subheading */}
               <motion.p
                 variants={childVariants}
                 className="text-base lg:text-base font-medium text-gray-300 mb-8 leading-relaxed max-w-lg"
@@ -197,15 +194,12 @@ export default function ImprovedHeroLand() {
                 our interactive learning platform.
               </motion.p>
 
-              {/* Enhanced buttons with better mobile layout */}
               <motion.div
                 variants={childVariants}
                 className="flex flex-col sm:flex-row gap-4 lg:justify-start"
               >
                 <motion.button
-                  whileHover={{
-                    scale: 1.05,
-                  }}
+                  whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   className="px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl text-white font-bold transition-all flex items-center justify-center group w-full sm:w-auto"
                 >
@@ -229,33 +223,34 @@ export default function ImprovedHeroLand() {
               </motion.div>
             </motion.div>
 
-            {/* Hero image with enhanced animations */}
+            {/* Desktop Hero Image */}
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
+              whileInView={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.8, ease: "easeOut", delay: 0.4 }}
+              viewport={{ margin: "-100px" }}
               className="w-full lg:w-1/2 justify-center items-center hidden lg:flex relative z-10"
             >
               <div className="relative">
-                  <Image
-                    src={Heroimage}
-                    alt="Learning illustration"
-                    className="w-full h-auto object-contain max-w-md"
-                    placeholder="blur"
-                    style={{
-                      filter: "drop-shadow(0 0 20px rgba(167, 139, 250, 0.3))",
-                    }}
-                  />
+                <Image
+                  src={Heroimage}
+                  alt="Learning illustration"
+                  className="w-full h-auto object-contain max-w-md"
+                  placeholder="blur"
+                  style={{ filter: "drop-shadow(0 0 20px rgba(167, 139, 250, 0.3))" }}
+                />
               </div>
             </motion.div>
           </div>
         </div>
       </div>
 
+      {/* Stats Section */}
       <motion.div
         initial="hidden"
-        animate="visible"
+        whileInView="visible"
         variants={statsVariants}
+        viewport={{ margin: "-100px" }}
         className="relative z-20 mb-12"
       >
         <div className="container mx-auto px-8 lg:px-20">
@@ -275,6 +270,6 @@ export default function ImprovedHeroLand() {
           </div>
         </div>
       </motion.div>
-    </section>
+    </motion.section>
   );
 }

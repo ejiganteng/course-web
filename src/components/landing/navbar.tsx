@@ -12,16 +12,27 @@ import Link from "next/link";
 export default function NavbarLand() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [prevScrollY, setPrevScrollY] = useState(0);
 
   useEffect(() => {
     const handleScroll = () => {
-      const scrollTop = window.scrollY;
-      setScrolled(scrollTop > 20);
+      const currentScrollY = window.scrollY;
+      
+      // Logic perubahan margin top
+      if (currentScrollY > prevScrollY && currentScrollY > 50) {
+        // Scroll ke bawah melebihi 50px
+        setScrolled(true);
+      } else if (currentScrollY < prevScrollY || currentScrollY <= 50) {
+        // Scroll ke atas atau di posisi atas
+        setScrolled(false);
+      }
+      
+      setPrevScrollY(currentScrollY);
     };
 
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  }, [prevScrollY]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -56,7 +67,9 @@ export default function NavbarLand() {
       initial={{ y: -100 }}
       animate={{ y: 0 }}
       transition={{ duration: 0.3, ease: "easeOut" }}
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 mx-7 lg:mx-20 mt-5 rounded-3xl py-3 lg:py-4 bg-gray-100 shadow-lg`}
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 mx-7 lg:mx-20 ${
+        scrolled ? "mt-1" : "mt-5"
+      } rounded-3xl py-3 lg:py-4 bg-gray-100 shadow-lg`}
     >
       <AnimatePresence>
         {mobileMenuOpen && (
