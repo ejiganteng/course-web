@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import Heroimage from "@/app/public/home-main-pic.png";
+import Heroimage from "@/app/public/home-five-img.png";
 import { motion, Variants } from "framer-motion";
 import {
   ArrowRightIcon,
@@ -94,7 +94,7 @@ export default function ImprovedHeroLand() {
   ];
 
   return (
-    <section className="relative min-h-screen flex flex-col overflow-hidden pt-16">
+    <section className="relative min-h-screen flex flex-col overflow-hidden pt-25 lg:pt-16">
       {/* Background elements */}
       <div className="absolute inset-0 bg-gradient-to-br from-gray-800/90 via-black to-purple-950/60 z-0">
         <motion.div
@@ -190,7 +190,7 @@ export default function ImprovedHeroLand() {
               {/* Improved subheading */}
               <motion.p
                 variants={childVariants}
-                className="text-base lg:text-base font-semibold text-gray-300 mb-8 leading-relaxed max-w-lg"
+                className="text-base lg:text-base font-medium text-gray-300 mb-8 leading-relaxed max-w-lg"
               >
                 Learn the latest skills from professional mentors
                 in various fields of technology and business with 
@@ -256,9 +256,9 @@ export default function ImprovedHeroLand() {
         initial="hidden"
         animate="visible"
         variants={statsVariants}
-        className="relative z-20 mb-8"
+        className="relative z-20 mb-12"
       >
-        <div className="container mx-auto px-4 sm:px-8 md:px-12 lg:px-20">
+        <div className="container mx-auto px-8 lg:px-20">
           <div className="flex flex-col lg:flex-row">
             <div className="w-full">
               <div className="grid grid-cols-2 lg:flex lg:justify-between gap-6 lg:gap-0">

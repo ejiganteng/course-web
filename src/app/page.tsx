@@ -3,7 +3,7 @@ import HeroLand from "../components/landing/hero";
 import NavbarLand from "../components/landing/navbar";
 import { motion, useScroll } from "framer-motion";
 import FooterLand from "../components/landing/footer";
-import KosonganLand from "../components/landing/kosongan";
+import KosonganLand from "../components/landing/course";
 
 export default function ScrollLinked() {
   const { scrollYProgress } = useScroll();
