@@ -4,6 +4,7 @@ import NavbarLand from "../components/landing/navbar";
 import { motion, useScroll } from "framer-motion";
 import FooterLand from "../components/landing/footer";
 import KosonganLand from "../components/landing/course";
+import StatsSection from "@/components/landing/stats";
 
 export default function ScrollLinked() {
   const { scrollYProgress } = useScroll();
@@ -31,6 +32,7 @@ function LandingPage() {
     <div className="min-h-screen text-black">
       <NavbarLand />
       <HeroLand />
+      <StatsSection/>
       <KosonganLand/>
       <FooterLand/>
     </div>
