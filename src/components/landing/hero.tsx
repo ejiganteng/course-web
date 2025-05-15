@@ -35,67 +35,7 @@ export default function ImprovedHeroLand() {
       viewport={{ margin: "-100px", once: false }}
     >
       {/* Background elements */}
-      <div className="absolute inset-0 bg-gradient-to-br from-gray-800/90 via-black to-purple-950/60 z-0">
-        {/* Animated Background Circles */}
-        <motion.div
-          className="absolute top-1/4 left-1/4 w-64 h-64 rounded-full blur-3xl opacity-20"
-          style={{
-            background:
-              "radial-gradient(circle, rgba(147,51,234,0.4) 0%, rgba(79,70,229,0.1) 100%)",
-          }}
-          initial={false}
-          whileInView={{
-            scale: [1, 1.2, 1],
-            opacity: [0.2, 0.4, 0.2],
-          }}
-          transition={{
-            duration: 8,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-          viewport={{ margin: "-100px" }}
-        />
-
-        <motion.div
-          className="absolute top-1/3 right-1/4 w-72 h-72 rounded-full blur-3xl opacity-20"
-          style={{
-            background:
-              "radial-gradient(circle, rgba(99,102,241,0.4) 0%, rgba(67,56,202,0.1) 90%)",
-          }}
-          initial={false}
-          whileInView={{
-            scale: [1, 1.1, 1],
-            opacity: [0.2, 0.3, 0.2],
-          }}
-          transition={{
-            duration: 10,
-            repeat: Infinity,
-            ease: "easeInOut",
-            delay: 2,
-          }}
-          viewport={{ margin: "-100px" }}
-        />
-
-        <motion.div
-          className="absolute bottom-1/4 left-1/3 w-80 h-80 rounded-full blur-3xl opacity-20"
-          style={{
-            background:
-              "radial-gradient(circle, rgba(59,130,246,0.4) 0%, rgba(43,89,219,0.1) 90%)",
-          }}
-          initial={false}
-          whileInView={{
-            scale: [1, 1.3, 1],
-            opacity: [0.2, 0.5, 0.2],
-          }}
-          transition={{
-            duration: 12,
-            repeat: Infinity,
-            ease: "easeInOut",
-            delay: 4,
-          }}
-          viewport={{ margin: "-100px" }}
-        />
-
+      <div className="absolute inset-0 bg-gradient-to-tr from-black via-black to-purple-950/90 z-0">
         {/* Mobile Hero Image */}
         <motion.div
           className="lg:hidden absolute inset-0 flex items-center justify-center opacity-20"
@@ -115,7 +55,7 @@ export default function ImprovedHeroLand() {
 
       {/* Main Content */}
       <div className="flex-grow flex items-center relative z-10">
-        <div className="container mx-auto px-8 lg:px-20">
+        <div className="container mx-auto px-8 lg:px-10">
           <div className="flex flex-col lg:flex-row">
             <motion.div
               variants={containerVariants}
@@ -126,33 +66,30 @@ export default function ImprovedHeroLand() {
             >
               <motion.div variants={childVariants} className="relative">
                 <motion.span
-                  className="inline-block px-4 py-2 bg-purple-600/20 backdrop-blur-sm rounded-full text-purple-300 text-sm font-semibold mb-2"
-                  whileHover={{ scale: 1.05 }}
+                  className="inline-flex items-center gap-2 px-2 py-2 bg-white/10 backdrop-blur-md rounded-full text-gray-300 mb-4 text-sm font-bold shadow-lg ring-1 ring-white/20 transition duration-300"
+                  whileHover={{ scale: 1.07 }}
+                  whileTap={{ scale: 0.97 }}
                 >
-                  New Courses Available!
+                  <span className="flex items-center justify-center px-2 py-1 text-xs font-bold text-white bg-purple-700 rounded-full shadow-md">
+                    New
+                  </span>
+                  Courses Available!
                 </motion.span>
 
-                <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-extrabold mb-4 lg:mb-6 leading-tight">
-                  <span className="bg-gradient-to-r from-purple-400 to-indigo-300 bg-clip-text text-transparent">
-                    Transform Your Career
-                  </span>
-                  <span className="block text-transparent bg-clip-text bg-gradient-to-r from-purple-300 to-pink-400">
-                    in 2024
+                <h1 className="text-5xl lg:text-8xl font-extrabold mb-4 lg:mb-6 leading-tight">
+                  <span className="bg-gradient-to-r text-white">
+                    Build web from scratch
                   </span>
                 </h1>
               </motion.div>
 
               <motion.p
                 variants={childVariants}
-                className="text-lg lg:text-xl font-medium text-gray-300 mb-8 leading-relaxed max-w-lg"
+                className="text-lg lg:text-xl font-base text-gray-300 mb-8 leading-relaxed max-w-lg"
               >
-                Build professional-grade applications with{" "}
-                <span className="text-purple-300 font-semibold">
-                  React, Next.js, Node.js
-                </span>{" "}
-                and modern tools. Join{" "}
-                <span className="text-indigo-300">10,000+ students</span> who{" "}
-                accelerated their careers with us.
+                Build professional-grade applications with React, Next.js,
+                Node.js and modern tools. Join 10,000+ students who accelerated
+                their careers with us.
               </motion.p>
 
               <motion.div

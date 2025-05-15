@@ -67,9 +67,9 @@ export default function NavbarLand() {
       initial={{ y: -100 }}
       animate={{ y: 0 }}
       transition={{ duration: 0.3, ease: "easeOut" }}
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 mx-7 lg:mx-20 ${
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 mx-7 lg:mx-10 ${
         scrolled ? "mt-1" : "mt-5"
-      } rounded-3xl py-3 lg:py-4 bg-gray-100 shadow-lg`}
+      } rounded-xl py-3 lg:py-4 bg-gray-100 shadow-lg`}
     >
       <AnimatePresence>
         {mobileMenuOpen && (
@@ -98,7 +98,7 @@ export default function NavbarLand() {
             {["Beranda", "Kursus", "Tentang", "Kontak"].map((item) => (
               <Link key={item} href={`/${item.toLowerCase()}`}>
                 <motion.span
-                  className="text-gray-600 font-bold hover:text-purple-700 transition-colors relative group cursor-pointer"
+                  className="text-gray-900 font-medium hover:text-purple-700 transition-colors relative group cursor-pointer"
                   whileHover={{ y: -2 }}
                 >
                   {item}

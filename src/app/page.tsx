@@ -18,7 +18,7 @@ export default function ScrollLinked() {
           originX: 0,
           height: 5,
         }}
-        className="fixed top-0 left-0 right-0 bg-purple-500 z-50"
+        className="fixed top-0 left-0 right-0 bg-purple-800 z-50"
       />
 
       <LandingPage />

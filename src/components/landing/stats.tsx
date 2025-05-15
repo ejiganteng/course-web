@@ -70,7 +70,7 @@ export default function AnimatedCounter() {
   };
 
   return (
-    <div className="h-fit bg-white flex items-center justify-center p-8">
+    <div className="h-fit bg-white rounded-t-4xl flex items-center justify-center p-8">
       <motion.div
         ref={ref}
         initial="hidden"
