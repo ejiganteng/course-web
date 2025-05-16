@@ -1,8 +1,7 @@
 "use client";
-import "./public/globals.css";
+import "../public/globals.css";
 import { usePathname } from "next/navigation";
 import { Poppins } from "next/font/google";
-import NavbarLand from "@/components/landing/navbar";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -11,11 +10,11 @@ const poppins = Poppins({
   variable: "--font-poppins",
 });
 
-export default function RootLayout({
+export default function AuthLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   const pathname = usePathname();
 
   return (
