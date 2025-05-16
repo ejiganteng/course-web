@@ -37,10 +37,25 @@ export default function AnimatedCounter() {
   });
 
   const stats = [
-    { id: 1, value: useCounter(3556, 2000, inView), label: "Member", suffix: "+" },
+    {
+      id: 1,
+      value: useCounter(3556, 2000, inView),
+      label: "Member",
+      suffix: "+",
+    },
     { id: 2, value: useCounter(13, 2000, inView), label: "Class", suffix: "+" },
-    { id: 3, value: useCounter(29, 2000, inView), label: "Duration (Hour)", suffix: "+" },
-    { id: 4, value: useCounter(720, 2000, inView), label: "Content", suffix: "+" },
+    {
+      id: 3,
+      value: useCounter(29, 2000, inView),
+      label: "Duration (Hour)",
+      suffix: "+",
+    },
+    {
+      id: 4,
+      value: useCounter(720, 2000, inView),
+      label: "Content",
+      suffix: "+",
+    },
   ];
 
   const containerVariants = {
@@ -60,11 +75,11 @@ export default function AnimatedCounter() {
       opacity: 1,
       y: 0,
       scale: 1,
-      transition: { 
+      transition: {
         type: "spring",
         stiffness: 100,
         damping: 20,
-        duration: 0.6 
+        duration: 0.6,
       },
     },
   };
@@ -87,7 +102,7 @@ export default function AnimatedCounter() {
             initial={{ opacity: 0, y: 20 }}
             animate={inView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.6, delay: 0.6 }}
-            className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-4"
+            className="text-4xl lg:text-5xl font-bold text-gray-900 mb-4"
           >
             Upgrading Creative
             <br className="hidden sm:block" />
@@ -96,20 +111,20 @@ export default function AnimatedCounter() {
         </motion.div>
 
         {/* Stats Grid */}
-        <div className="flex flex-wrap justify-center gap-6 lg:gap-8 gap-y-12">
+        <div className="grid grid-cols-2 gap-4 md:flex md:justify-center md:gap-3 lg:gap-8">
           {stats.map((stat) => (
             <motion.div
               key={stat.id}
               variants={itemVariants}
-              className="flex-1 basis-[45%] sm:basis-[30%] lg:basis-auto min-w-[200px]"
+              className="w-full p-4 sm:p-6 lg:p-8"
               whileHover={{ scale: 1.05 }}
             >
-              <div className="text-center flex flex-col items-center p-4 sm:p-6 lg:p-8">
-                <div className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-500 mb-2">
+              <div className="text-center flex flex-col items-center">
+                <div className="text-4xl lg:text-6xl font-bold text-gray-500">
                   {stat.value}
-                  <span className="text-2xl sm:text-3xl lg:text-4xl">{stat.suffix}</span>
+                  <span className="text-3xl lg:text-5xl">{stat.suffix}</span>
                 </div>
-                <div className="text-base sm:text-lg lg:text-xl text-gray-500 font-semibold">
+                <div className="text-lg lg:text-xl text-gray-500 font-bold">
                   {stat.label}
                 </div>
               </div>

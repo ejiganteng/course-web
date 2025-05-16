@@ -35,7 +35,7 @@ export default function ImprovedHeroLand() {
       viewport={{ margin: "-100px", once: false }}
     >
       {/* Background elements */}
-      <div className="absolute inset-0 bg-gradient-to-tr from-black via-black to-purple-950/90 z-0">
+      <div className="absolute inset-0 bg-gradient-to-tr from-black via-black to-purple-900/90 z-0">
         {/* Mobile Hero Image */}
         <motion.div
           className="lg:hidden absolute inset-0 flex items-center justify-center opacity-20"
@@ -76,7 +76,7 @@ export default function ImprovedHeroLand() {
                   Courses Available!
                 </motion.span>
 
-                <h1 className="text-5xl lg:text-8xl font-extrabold mb-4 lg:mb-6 leading-tight">
+                <h1 className="text-5xl lg:text-8xl font-extrabold mb-4 lg:mb-6">
                   <span className="bg-gradient-to-r text-white">
                     Build web from scratch
                   </span>
@@ -85,7 +85,7 @@ export default function ImprovedHeroLand() {
 
               <motion.p
                 variants={childVariants}
-                className="text-lg lg:text-xl font-base text-gray-300 mb-8 leading-relaxed max-w-lg"
+                className="text-lg lg:text-xl font-base text-gray-300 mb-8 max-w-lg"
               >
                 Build professional-grade applications with React, Next.js,
                 Node.js and modern tools. Join 10,000+ students who accelerated

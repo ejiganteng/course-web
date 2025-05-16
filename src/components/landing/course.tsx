@@ -4,7 +4,13 @@ import { motion, useInView } from "framer-motion";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Pagination } from "swiper/modules";
 import { useRouter } from "next/navigation";
-import { FaCheck, FaStar } from "react-icons/fa";
+import { CheckIcon, StarIcon } from "@heroicons/react/24/solid";
+import {
+  AcademicCapIcon,
+  BookOpenIcon,
+  ClockIcon,
+  ComputerDesktopIcon,
+} from "@heroicons/react/24/outline";
 import "swiper/css";
 import "swiper/css/pagination";
 
@@ -16,6 +22,8 @@ const courses = [
     price: "$299",
     duration: "12 weeks",
     level: "Beginner to Advanced",
+    image:
+      "https://images.unsplash.com/photo-1587620962725-abab7fe55159?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80",
   },
   {
     id: 2,
@@ -24,6 +32,8 @@ const courses = [
     price: "$349",
     duration: "14 weeks",
     level: "Intermediate",
+    image:
+      "https://images.unsplash.com/photo-1555066931-4365d14bab8c?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80",
   },
   {
     id: 3,
@@ -32,6 +42,8 @@ const courses = [
     price: "$599",
     duration: "24 weeks",
     level: "Beginner to Advanced",
+    image:
+      "https://images.unsplash.com/photo-1498050108023-c5249f4df085?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80",
   },
   {
     id: 4,
@@ -40,81 +52,109 @@ const courses = [
     price: "$399",
     duration: "16 weeks",
     level: "Intermediate",
+    image:
+      "https://images.unsplash.com/photo-1518791841217-8f162f1e1131?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80",
   },
 ];
 
 const CourseCard = ({ course, index }: { course: any; index: number }) => {
   const ref = useRef(null);
-  const isInView = useInView(ref, { once: false, margin: "-100px" });
   const router = useRouter();
 
   return (
-    <motion.div
+    <div
       ref={ref}
-      initial={{ opacity: 0, y: 40 }}
-      animate={isInView ? { opacity: 1, y: 0 } : {}}
-      transition={{
-        delay: index * 0.1,
-        duration: 0.1,
-        ease: "easeOut",
-      }}
-      className="relative h-[500px] md:h-[520px] bg-white w-full mx-auto shadow-lg hover:shadow-xl rounded-2xl transition-all duration-300 border border-gray-100"
+      className="relative h-[500px] lg:h-[520px] bg-white w-full mx-auto shadow-xl hover:shadow-2xl rounded-2xl transition-all duration-300 border border-gray-100 overflow-hidden group"
     >
-      <div className="h-[40%] bg-gradient-to-tr from-purple-500 to-blue-400 relative rounded-t-2xl">
-        <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent rounded-t-2xl" />
-        <div className="absolute bottom-0 left-0 right-0 p-6 pb-4">
-          <h3 className="text-2xl font-bold text-white mb-2">{course.title}</h3>
-          <p className="text-gray-200 line-clamp-2">{course.description}</p>
+      {/* Image Header Section */}
+      <div className="h-[40%] relative rounded-t-2xl overflow-hidden">
+        <img
+          src={course.image}
+          alt={course.title}
+          className="w-full h-full object-cover absolute inset-0"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+        <div className="absolute inset-0 backdrop-blur-sm bg-white/5" />
+        <div className="absolute bottom-0 left-0 right-0 p-6 pb-4 space-y-2">
+          <h3 className="text-2xl font-bold text-white drop-shadow-lg">
+            {course.title}
+          </h3>
+          <p className="text-gray-200 line-clamp-2 font-medium leading-snug">
+            {course.description}
+          </p>
+        </div>
+        <div className="absolute top-4 right-4 w-12 h-12 border-2 border-white/20 rounded-xl flex items-center justify-center">
+          <AcademicCapIcon className="w-6 h-6 text-white/80" />
         </div>
       </div>
 
+      {/* Content Section */}
       <div className="p-6">
+        {/* Price & Duration */}
         <div className="flex justify-between items-center mb-5">
-          <span className="text-purple-600 font-bold text-lg">
-            {course.price}
-          </span>
-          <div className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm">
+          <div className="flex items-baseline gap-2">
+            <span className="text-purple-600 font-bold text-2xl">
+              {course.price}
+            </span>
+            <span className="text-gray-400 text-sm line-through">$599</span>
+          </div>
+          <div className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-semibold shadow-sm flex items-center gap-1">
+            <ClockIcon className="w-4 h-4" />
             {course.duration}
           </div>
         </div>
 
+        {/* Badges */}
         <div className="flex flex-wrap gap-2 mb-6">
-          <div className="px-3 py-1.5 bg-gray-100 text-gray-600 rounded-lg text-sm">
+          <div className="px-3 py-1.5 bg-emerald-100 text-emerald-800 rounded-lg text-sm font-medium flex items-center gap-1">
+            <CheckIcon className="w-4 h-4" />
             {course.level}
           </div>
-          <div className="px-3 py-1.5 bg-gray-100 text-gray-600 rounded-lg text-sm flex items-center gap-1">
-            <FaStar className="text-yellow-500" /> 4.9/5
+          <div className="px-3 py-1.5 bg-amber-100 text-amber-800 rounded-lg text-sm font-medium flex items-center gap-1">
+            <StarIcon className="w-4 h-4 text-amber-500" />
+            4.9/5
           </div>
         </div>
 
+        {/* Course Features */}
         <div className="space-y-4">
-          <h4 className="text-lg font-semibold text-gray-800">Course Includes:</h4>
+          <h4 className="text-lg font-semibold text-gray-800 border-b pb-2 border-gray-100 flex items-center gap-2">
+            <BookOpenIcon className="w-5 h-5 text-purple-600" />
+            Course Includes:
+          </h4>
           <ul className="space-y-3">
-            <li className="flex items-center gap-2 text-gray-600">
-              <FaCheck className="w-5 h-5 text-purple-500" />
-              50+ Coding Challenges
-            </li>
-            <li className="flex items-center gap-2 text-gray-600">
-              <FaCheck className="w-5 h-5 text-purple-500" />
-              Real-world Projects
-            </li>
-            <li className="flex items-center gap-2 text-gray-600">
-              <FaCheck className="w-5 h-5 text-purple-500" />
-              Certificate of Completion
-            </li>
+            {[
+              "50+ Coding Challenges",
+              "Real-world Projects",
+              "Certificate of Completion",
+              "Lifetime Access",
+              "Community Support",
+            ].map((feature, i) => (
+              <li
+                key={i}
+                className="flex items-center gap-3 text-gray-600 hover:bg-gray-50 p-2 rounded-lg transition-colors"
+              >
+                <div className="w-7 h-7 bg-purple-100 rounded-full flex items-center justify-center">
+                  <CheckIcon className="w-4 h-4 text-purple-600" />
+                </div>
+                <span className="font-medium">{feature}</span>
+              </li>
+            ))}
           </ul>
         </div>
 
+        {/* Enroll Button */}
         <div className="absolute bottom-6 left-6 right-6 flex gap-3">
           <button
             onClick={() => router.push(`/courses/${course.id}`)}
-            className="w-full py-3 bg-gradient-to-r from-purple-600 to-blue-500 hover:from-purple-700 hover:to-blue-600 text-white rounded-lg transition-all"
+            className="w-full py-3.5 bg-gradient-to-r from-purple-600 to-blue-500 hover:from-purple-700 hover:to-blue-600 text-white rounded-xl transition-all duration-300 shadow-lg hover:shadow-purple-200 hover:-translate-y-0.5 font-semibold flex items-center justify-center gap-2"
           >
-            View Details
+            <ComputerDesktopIcon className="w-5 h-5" />
+            Enroll Now
           </button>
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 };
 
@@ -122,40 +162,46 @@ export default function CourseLand() {
   const router = useRouter();
 
   return (
-    <div className="bg-white justify-center flex w-full px-8">
-      <div className="m-10 px-4 lg:px-8 py-16 lg:py-24 bg-gradient-to-b from-purple-900/95 via-purple-950/90 to-purple-800/80 w-full rounded-4xl">
-        <div className="flex flex-col md:flex-row justify-between items-center mb-12 lg:mb-16 gap-6">
-          <div className="text-center md:text-left">
-            <h1 className="text-4xl md:text-5xl font-bold text-gray-100 mb-4">
-              Master Web Development
+    <div className="bg-white justify-center flex w-full px-4 sm:px-8">
+      <div className="m-8 sm:m-10 px-4 lg:px-8 py-14 lg:py-24 bg-gradient-to-b from-black via-violet-700 to-purple-950/90 w-full rounded-[2.5rem]">
+        {/* Header Section */}
+        <div className="flex flex-col lg:flex-row justify-between items-center mb-12 lg:mb-16 gap-6">
+          <div className="text-center lg:text-left max-w-2xl">
+            <h1 className="text-4xl lg:text-5xl font-bold text-gray-100 flex items-center gap-3">
+              Master Modern Web Development
             </h1>
-            <p className="text-lg md:text-xl text-purple-100/90 max-w-2xl mx-auto md:mx-0">
-              Comprehensive courses taught by industry experts
-            </p>
           </div>
           <button
             onClick={() => router.push("/courses")}
-            className="px-6 py-2.5 text-sm font-semibold text-purple-100 bg-white/10 hover:bg-white/20 border border-white/30 rounded-lg backdrop-blur-sm transition-colors duration-300 shrink-0"
+            className="px-8 py-3.5 text-base font-semibold text-purple-100 bg-white/10 hover:bg-white/20 border border-white/30 rounded-xl backdrop-blur-sm transition-colors duration-300 shrink-0 hover:scale-[1.02] flex items-center gap-2"
           >
-            See All Courses
+            <BookOpenIcon className="w-5 h-5" />
+            Explore All Courses →
           </button>
         </div>
 
+        {/* Courses Slider */}
         <Swiper
           modules={[Pagination]}
           loop={true}
           spaceBetween={30}
           slidesPerView={1}
-          pagination={{ clickable: true }}
+          pagination={{
+            clickable: true,
+            el: ".course-pagination",
+            bulletClass: "swiper-pagination-bullet !bg-white/50",
+            bulletActiveClass: "!bg-purple-400",
+          }}
           breakpoints={{
             640: { slidesPerView: 1.2, spaceBetween: 20 },
             768: { slidesPerView: 2, spaceBetween: 25 },
             1024: { slidesPerView: 3, spaceBetween: 30 },
+            1280: { slidesPerView: 3.5, spaceBetween: 35 },
           }}
           className="relative"
         >
           {courses.map((course, index) => (
-            <SwiperSlide key={course.id} className="!h-auto pb-12">
+            <SwiperSlide key={course.id} className="!h-auto">
               <CourseCard course={course} index={index} />
             </SwiperSlide>
           ))}
