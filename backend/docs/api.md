@@ -6,9 +6,9 @@
 
 ---
 
-## Auth API
+## 🔐 Auth API
 
-### Register User
+### ✅ Register User
 
 -   **URL:** `/api/register`
 -   **Method:** `POST`
@@ -41,7 +41,7 @@
 
 ---
 
-### Login User
+### ✅ Login User
 
 -   **URL:** `/api/login`
 -   **Method:** `POST`
@@ -70,25 +70,169 @@
 
 ---
 
-### Logout User
+### ✅ Logout User
 
 -   **URL:** `/api/logout`
 -   **Method:** `POST`
--   **Headers:** `Content-Type: application/json`
+-   **Headers:**
 
 ```
-Authorization: Bearer 3|CzRYrT6jAifE3QTjvzJypAkbwNPmqxnAzThDXcK5699b86b4
+Authorization: Bearer {token}
+Content-Type: application/json
 ```
 
 #### Request Body:
 
-Kosong atau `null`
+Kosong
 
 #### Response:
 
 ```json
 {
     "message": "Berhasil logout"
+}
+```
+
+---
+
+## 👤 User API
+
+> Semua endpoint User membutuhkan token (login dulu), dan gunakan header:
+
+```
+Authorization: Bearer {token}
+Content-Type: application/json
+```
+
+---
+
+### 📄 Ambil Semua User
+
+-   **URL:** `/api/users`
+-   **Method:** `GET`
+
+#### Response:
+
+```json
+{
+    "message": "Data users berhasil diambil",
+    "data": [
+        {
+            "id": 1,
+            "name": "nama",
+            "email": "nama@example.test",
+            "role": "user",
+            "created_at": "...",
+            "updated_at": "..."
+        },
+        ...
+    ]
+}
+```
+
+---
+
+### ➕ Tambah User
+
+-   **URL:** `/api/users`
+-   **Method:** `POST`
+
+#### Request Body:
+
+```json
+{
+    "name": "User Baru",
+    "email": "baru@example.com",
+    "password": "password123",
+    "role": "admin"
+}
+```
+
+#### Response:
+
+```json
+{
+    "message": "User berhasil dibuat",
+    "data": {
+        "id": 2,
+        "name": "User Baru",
+        "email": "baru@example.com",
+        "role": "admin",
+        "created_at": "...",
+        "updated_at": "..."
+    }
+}
+```
+
+---
+
+### 🔍 Lihat Detail User
+
+-   **URL:** `/api/users/{id}`
+-   **Method:** `GET`
+
+#### Response:
+
+```json
+{
+    "message": "Detail user ditemukan",
+    "data": {
+        "id": 1,
+        "name": "nama",
+        "email": "nama@example.test",
+        "role": "user",
+        "created_at": "...",
+        "updated_at": "..."
+    }
+}
+```
+
+---
+
+### 📝 Update User
+
+-   **URL:** `/api/users/{id}`
+-   **Method:** `PUT`
+
+#### Request Body:
+
+```json
+{
+    "name": "Nama Baru",
+    "email": "baru@example.com",
+    "password": "passwordBaru123",
+    "role": "instruktur"
+}
+```
+
+#### Response:
+
+```json
+{
+    "message": "User berhasil diperbarui",
+    "data": {
+        "id": 1,
+        "name": "Nama Baru",
+        "email": "baru@example.com",
+        "role": "instruktur",
+        "created_at": "...",
+        "updated_at": "..."
+    }
+}
+```
+
+---
+
+### ❌ Hapus User
+
+-   **URL:** `/api/users/{id}`
+-   **Method:** `DELETE`
+
+#### Response:
+
+```json
+{
+    "message": "User berhasil dihapus"
 }
 ```
 
