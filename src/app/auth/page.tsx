@@ -99,7 +99,7 @@ const Login = ({ switchView }: { switchView: () => void }) => {
     setIsLoading(true);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/login`, {
+      const response = await fetch(`${API_BASE_URL}/auth`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -115,7 +115,7 @@ const Login = ({ switchView }: { switchView: () => void }) => {
       }
 
       localStorage.setItem('token', data.data.token);
-      window.location.href = '/dashboard';
+      window.location.href = '/admin';
     } catch (err) {
       const error = err as Error;
       setError(error.message || 'Terjadi kesalahan saat login');
