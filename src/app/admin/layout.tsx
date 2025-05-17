@@ -8,9 +8,9 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 export default function AdminLayout({ children }: { children: ReactNode }) {
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen">
         {children}
-        <ToastContainer />
+        <ToastContainer theme="dark" />
       </div>
     </ProtectedRoute>
   );

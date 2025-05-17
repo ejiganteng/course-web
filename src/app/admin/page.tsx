@@ -174,10 +174,10 @@ export default function AdminPage() {
     <div className="flex">
       <AdminNav />
       
-      <div className="flex-1 ml-64 mt-16 p-8">
+      <div className="flex-1 ml-64 mt-18">
         <AdminHeader />
         
-        <main className="p-8 bg-white rounded-lg shadow">
+        <main className="p-8 bg-white rounded-t-4xl shadow">
           <div className="flex justify-between items-center mb-6">
             <div className="relative w-64">
               <FiSearch className="absolute left-3 top-3 text-gray-400" />

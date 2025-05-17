@@ -54,15 +54,15 @@ export default function AdminNav() {
     <motion.nav
       initial={{ x: -100 }}
       animate={{ x: 0 }}
-      className="fixed h-full bg-white shadow-lg w-64 flex flex-col justify-between"
+      className="fixed h-full w-64 flex flex-col justify-between"
     >
       <div className="p-4">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-xl font-bold text-gray-800">Admin Panel</h1>
-            <p className="text-sm text-gray-500">User ID: {userId}</p>
+            <h1 className="text-xl font-bold text-gray-100">Admin Panel</h1>
+            <p className="text-sm text-gray-400">User ID: {userId}</p>
           </div>
-          <button className="lg:hidden p-2">
+          <button className="lg:hidden p-2 text-gray-400 hover:text-gray-200">
             <HiBars3 className="w-6 h-6" />
           </button>
         </div>
@@ -70,39 +70,39 @@ export default function AdminNav() {
         <div className="space-y-2">
           <a
             href="/admin"
-            className="flex items-center p-2 text-gray-700 rounded-lg hover:bg-gray-100"
+            className="flex items-center p-2 text-gray-300 rounded-lg hover:bg-gray-800 transition-colors"
           >
-            <HiHome className="w-5 h-5 mr-3" />
+            <HiHome className="w-5 h-5 mr-3 text-gray-400" />
             Dashboard
           </a>
           <a
             href="/admin/users"
-            className="flex items-center p-2 text-gray-700 rounded-lg hover:bg-gray-100"
+            className="flex items-center p-2 text-gray-300 rounded-lg hover:bg-gray-800 transition-colors"
           >
-            <HiUsers className="w-5 h-5 mr-3" />
+            <HiUsers className="w-5 h-5 mr-3 text-gray-400" />
             Users
           </a>
           <a
             href="/admin/analytics"
-            className="flex items-center p-2 text-gray-700 rounded-lg hover:bg-gray-100"
+            className="flex items-center p-2 text-gray-300 rounded-lg hover:bg-gray-800 transition-colors"
           >
-            <HiChartBar className="w-5 h-5 mr-3" />
+            <HiChartBar className="w-5 h-5 mr-3 text-gray-400" />
             Analytics
           </a>
           <a
             href="/admin/settings"
-            className="flex items-center p-2 text-gray-700 rounded-lg hover:bg-gray-100"
+            className="flex items-center p-2 text-gray-300 rounded-lg hover:bg-gray-800 transition-colors"
           >
-            <HiCog className="w-5 h-5 mr-3" />
+            <HiCog className="w-5 h-5 mr-3 text-gray-400" />
             Settings
           </a>
         </div>
       </div>
 
-      <div className="p-4 border-t">
+      <div className="p-4 border-t border-gray-800">
         <button
           onClick={handleLogout}
-          className="flex items-center w-full p-2 text-red-600 rounded-lg hover:bg-red-50 transition-colors"
+          className="flex items-center w-full p-2 text-red-400 rounded-lg hover:bg-red-900/30 transition-colors"
         >
           <HiLogout className="w-5 h-5 mr-3" />
           Logout
