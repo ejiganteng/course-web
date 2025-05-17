@@ -19,7 +19,7 @@ export default function RootLayout({
 
   return (
     <html lang="en" className={`h-full ${poppins.variable}`}>
-       <head>
+      <head>
         <link
           href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap"
           rel="stylesheet"
@@ -27,7 +27,9 @@ export default function RootLayout({
       </head>
       <body className="font-poppins">
         <main>
-          <div className="min-h-screen">{children}</div>
+          <div className="min-h-screen">
+            {children}
+          </div>
         </main>
       </body>
     </html>

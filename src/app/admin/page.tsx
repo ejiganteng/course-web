@@ -6,33 +6,40 @@ import { FiEdit, FiTrash, FiPlus, FiSearch } from 'react-icons/fi';
 import AdminNav from '@/components/admin/navbar';
 import AdminHeader from '@/components/admin/header';
 import { toast } from 'react-toastify';
-import { useAuth } from '@/hooks/useAuth';
+
 interface User {
   id: number;
   name: string;
   email: string;
+  role: string;
   created_at: string;
 }
 
 interface UserForm {
   name: string;
   email: string;
-  password?: string;
+  password: string;
+  password_confirmation: string;
+  role: string;
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export default function AdminPage() {
-  useAuth(); 
   const [users, setUsers] = useState<User[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [form, setForm] = useState<UserForm>({ name: '', email: '' });
+  const [form, setForm] = useState<UserForm>({ 
+    name: '', 
+    email: '',
+    password: '',
+    password_confirmation: '',
+    role: 'user'
+  });
 
-  // Fetch users
   const fetchUsers = async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/users`, {
@@ -42,7 +49,7 @@ export default function AdminPage() {
       });
 
       if (response.status === 401) {
-        window.location.href = '/login';
+        window.location.href = '/auth';
         return;
       }
 
@@ -59,39 +66,55 @@ export default function AdminPage() {
     fetchUsers();
   }, []);
 
-  // Handle Search
   const filteredUsers = users.filter(user =>
     user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Add User
   const handleAddUser = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await fetch(`${API_BASE_URL}/users`, {
+      if (form.password !== form.password_confirmation) {
+        toast.error('Konfirmasi password tidak sesuai');
+        return;
+      }
+
+      const response = await fetch(`${API_BASE_URL}/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
         },
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          name: form.name,
+          email: form.email,
+          password: form.password,
+          password_confirmation: form.password_confirmation,
+          role: form.role
+        }),
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        throw new Error('Gagal menambahkan pengguna');
+        throw new Error(data.message || 'Gagal menambahkan pengguna');
       }
 
       await fetchUsers();
       setShowAddModal(false);
       toast.success('Pengguna berhasil ditambahkan');
-      setForm({ name: '', email: '' });
+      setForm({ 
+        name: '', 
+        email: '', 
+        password: '', 
+        password_confirmation: '',
+        role: 'user'
+      });
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Terjadi kesalahan');
     }
   };
 
-  // Edit User
   const handleEditUser = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedUser) return;
@@ -103,11 +126,17 @@ export default function AdminPage() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
         },
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          name: form.name,
+          email: form.email,
+          role: form.role,
+          password: form.password || undefined
+        }),
       });
 
       if (!response.ok) {
-        throw new Error('Gagal memperbarui pengguna');
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Gagal memperbarui pengguna');
       }
 
       await fetchUsers();
@@ -118,7 +147,6 @@ export default function AdminPage() {
     }
   };
 
-  // Delete User
   const handleDelete = async (id: number) => {
     if (!confirm('Apakah Anda yakin ingin menghapus pengguna ini?')) return;
 
@@ -131,7 +159,8 @@ export default function AdminPage() {
       });
 
       if (!response.ok) {
-        throw new Error('Gagal menghapus pengguna');
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Gagal menghapus pengguna');
       }
 
       await fetchUsers();
@@ -163,7 +192,13 @@ export default function AdminPage() {
             
             <button
               onClick={() => {
-                setForm({ name: '', email: '' });
+                setForm({ 
+                  name: '', 
+                  email: '', 
+                  password: '', 
+                  password_confirmation: '',
+                  role: 'user'
+                });
                 setShowAddModal(true);
               }}
               className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center"
@@ -185,6 +220,7 @@ export default function AdminPage() {
                   <tr>
                     <th className="px-6 py-3 text-left">Nama</th>
                     <th className="px-6 py-3 text-left">Email</th>
+                    <th className="px-6 py-3 text-left">Role</th>
                     <th className="px-6 py-3 text-left">Tanggal Daftar</th>
                     <th className="px-6 py-3 text-left">Aksi</th>
                   </tr>
@@ -194,6 +230,7 @@ export default function AdminPage() {
                     <tr key={user.id} className="border-t">
                       <td className="px-6 py-4">{user.name}</td>
                       <td className="px-6 py-4">{user.email}</td>
+                      <td className="px-6 py-4 capitalize">{user.role}</td>
                       <td className="px-6 py-4">
                         {new Date(user.created_at).toLocaleDateString()}
                       </td>
@@ -201,7 +238,13 @@ export default function AdminPage() {
                         <button
                           onClick={() => {
                             setSelectedUser(user);
-                            setForm({ name: user.name, email: user.email });
+                            setForm({ 
+                              name: user.name, 
+                              email: user.email,
+                              password: '',
+                              password_confirmation: '',
+                              role: user.role
+                            });
                             setShowEditModal(true);
                           }}
                           className="text-blue-600 hover:text-blue-800"
@@ -246,11 +289,30 @@ export default function AdminPage() {
                     onChange={(e) => setForm({ ...form, email: e.target.value })}
                     required
                   />
+                  <select
+                    className="w-full p-2 border rounded"
+                    value={form.role}
+                    onChange={(e) => setForm({ ...form, role: e.target.value })}
+                    required
+                  >
+                    <option value="user">User</option>
+                    <option value="admin">Admin</option>
+                    <option value="instruktur">Instruktur</option>
+                  </select>
                   <input
                     type="password"
                     placeholder="Password"
                     className="w-full p-2 border rounded"
+                    value={form.password}
                     onChange={(e) => setForm({ ...form, password: e.target.value })}
+                    required
+                  />
+                  <input
+                    type="password"
+                    placeholder="Konfirmasi Password"
+                    className="w-full p-2 border rounded"
+                    value={form.password_confirmation}
+                    onChange={(e) => setForm({ ...form, password_confirmation: e.target.value })}
                     required
                   />
                 </div>
@@ -297,10 +359,21 @@ export default function AdminPage() {
                     onChange={(e) => setForm({ ...form, email: e.target.value })}
                     required
                   />
+                  <select
+                    className="w-full p-2 border rounded"
+                    value={form.role}
+                    onChange={(e) => setForm({ ...form, role: e.target.value })}
+                    required
+                  >
+                    <option value="user">User</option>
+                    <option value="admin">Admin</option>
+                    <option value="instruktur">Instruktur</option>
+                  </select>
                   <input
                     type="password"
                     placeholder="Password (Biarkan kosong jika tidak diubah)"
                     className="w-full p-2 border rounded"
+                    value={form.password}
                     onChange={(e) => setForm({ ...form, password: e.target.value })}
                   />
                 </div>

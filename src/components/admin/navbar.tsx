@@ -4,53 +4,49 @@ import { motion } from "framer-motion";
 import { HiHome, HiUsers, HiChartBar, HiCog, HiLogout } from "react-icons/hi";
 import { HiBars3 } from "react-icons/hi2";
 import { useRouter } from "next/navigation";
-import { toast } from 'react-toastify';
+import { toast } from "react-toastify";
 
 export default function AdminNav() {
   const router = useRouter();
+  const userId = localStorage.getItem("user_id");
 
   const handleLogout = async () => {
     try {
-      const token = localStorage.getItem('token');
-      
-      // Jika tidak ada token, langsung redirect
+      const token = localStorage.getItem("token");
+
       if (!token) {
-        router.push('/login');
+        router.push("/auth");
         return;
       }
 
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/logout`,
+        `${process.env.NEXT_PUBLIC_API_URL}/logout`,
         {
-          method: 'POST',
+          method: "POST",
           headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+            Accept: "application/json",
           },
         }
       );
 
-      // Handle response tidak OK
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Logout gagal');
+        throw new Error(errorData.message || "Logout gagal");
       }
 
-      // Hapus storage dan redirect
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      
-      toast.success('Logout berhasil');
-      router.push('/login');
-      
+      localStorage.removeItem("token");
+      localStorage.removeItem("role");
+      localStorage.removeItem("user_id");
+
+      toast.success("Logout berhasil");
+      router.push("/auth");
     } catch (error) {
-      console.error('Logout error:', error);
-      toast.error('Gagal logout. Silakan coba lagi.');
-      
-      // Force clear storage jika terjadi error
+      console.error("Logout error:", error);
+      toast.error(error instanceof Error ? error.message : "Gagal logout");
       localStorage.clear();
-      router.push('/login');
+      router.push("/auth");
     }
   };
 
@@ -62,7 +58,10 @@ export default function AdminNav() {
     >
       <div className="p-4">
         <div className="flex items-center justify-between mb-8">
-          <h1 className="text-xl font-bold text-gray-800">Admin Panel</h1>
+          <div>
+            <h1 className="text-xl font-bold text-gray-800">Admin Panel</h1>
+            <p className="text-sm text-gray-500">User ID: {userId}</p>
+          </div>
           <button className="lg:hidden p-2">
             <HiBars3 className="w-6 h-6" />
           </button>
@@ -70,28 +69,28 @@ export default function AdminNav() {
 
         <div className="space-y-2">
           <a
-            href="#"
+            href="/admin"
             className="flex items-center p-2 text-gray-700 rounded-lg hover:bg-gray-100"
           >
             <HiHome className="w-5 h-5 mr-3" />
             Dashboard
           </a>
           <a
-            href="#"
+            href="/admin/users"
             className="flex items-center p-2 text-gray-700 rounded-lg hover:bg-gray-100"
           >
             <HiUsers className="w-5 h-5 mr-3" />
             Users
           </a>
           <a
-            href="#"
+            href="/admin/analytics"
             className="flex items-center p-2 text-gray-700 rounded-lg hover:bg-gray-100"
           >
             <HiChartBar className="w-5 h-5 mr-3" />
             Analytics
           </a>
           <a
-            href="#"
+            href="/admin/settings"
             className="flex items-center p-2 text-gray-700 rounded-lg hover:bg-gray-100"
           >
             <HiCog className="w-5 h-5 mr-3" />
@@ -103,7 +102,7 @@ export default function AdminNav() {
       <div className="p-4 border-t">
         <button
           onClick={handleLogout}
-          className="flex items-center w-full p-2 text-red-600 rounded-lg hover:bg-red-50"
+          className="flex items-center w-full p-2 text-red-600 rounded-lg hover:bg-red-50 transition-colors"
         >
           <HiLogout className="w-5 h-5 mr-3" />
           Logout
