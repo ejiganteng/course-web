@@ -1,14 +1,12 @@
-<center>
-<h1>📘 Dokumentasi Penggunaan API</h1>
-</center>
+# 📘 Dokumentasi Penggunaan API (Update)
 
 > **Base URL:** `http://localhost:3000/api`
 
 ---
 
-## 🔐 Auth API
+## Auth API
 
-### ✅ Register User
+### Register User
 
 -   **URL:** `/api/register`
 -   **Method:** `POST`
@@ -20,7 +18,8 @@
 {
     "name": "nama",
     "email": "nama@example.test",
-    "password": "iniPasswordAman"
+    "password": "iniPasswordAman",
+    "role": "admin" // optional, default: user
 }
 ```
 
@@ -33,15 +32,16 @@
         "id": 1,
         "name": "nama",
         "email": "nama@example.test",
-        "created_at": "2025-05-13T15:19:54.000000Z",
-        "updated_at": "2025-05-13T15:19:54.000000Z"
+        "role": "user",
+        "created_at": "...",
+        "updated_at": "..."
     }
 }
 ```
 
 ---
 
-### ✅ Login User
+### Login User (dengan role)
 
 -   **URL:** `/api/login`
 -   **Method:** `POST`
@@ -63,6 +63,9 @@
     "message": "Berhasil login",
     "data": {
         "user_id": 1,
+        "name": "nama",
+        "email": "nama@example.test",
+        "role": "admin",
         "token": "2|VZFMJ3R0UEWb7y46FvwjL1htn7dD88lWFhmp7UXm827a22af"
     }
 }
@@ -70,7 +73,7 @@
 
 ---
 
-### ✅ Logout User
+### Logout User
 
 -   **URL:** `/api/logout`
 -   **Method:** `POST`
@@ -89,39 +92,37 @@ Kosong
 
 ```json
 {
-    "message": "Berhasil logout"
+    "message": "Logout berhasil",
+    "data": null
 }
 ```
 
 ---
 
-## 👤 User API
+## Category API
 
-> Semua endpoint User membutuhkan token (login dulu), dan gunakan header:
+> Semua endpoint `Category` memerlukan login dan role **admin**.
+
+### Ambil Semua Category
+
+-   **URL:** `/api/categories`
+-   **Method:** `GET`
+-   **Headers:**
 
 ```
 Authorization: Bearer {token}
 Content-Type: application/json
 ```
 
----
-
-### 📄 Ambil Semua User
-
--   **URL:** `/api/users`
--   **Method:** `GET`
-
 #### Response:
 
 ```json
 {
-    "message": "Data users berhasil diambil",
+    "message": "Data categories berhasil diambil",
     "data": [
         {
             "id": 1,
-            "name": "nama",
-            "email": "nama@example.test",
-            "role": "user",
+            "name": "Kategori A",
             "created_at": "...",
             "updated_at": "..."
         },
@@ -132,55 +133,65 @@ Content-Type: application/json
 
 ---
 
-### ➕ Tambah User
+### Tambah Category
 
--   **URL:** `/api/users`
+-   **URL:** `/api/categories`
 -   **Method:** `POST`
 
 #### Request Body:
 
 ```json
 {
-    "name": "User Baru",
-    "email": "baru@example.com",
-    "password": "password123",
-    "role": "admin"
+    "name": "Kategori Baru"
 }
 ```
 
 #### Response:
 
+> Success: 201 created
+
 ```json
 {
-    "message": "User berhasil dibuat",
+    "message": "Category berhasil dibuat",
     "data": {
         "id": 2,
-        "name": "User Baru",
-        "email": "baru@example.com",
-        "role": "admin",
+        "name": "Kategori Baru",
         "created_at": "...",
         "updated_at": "..."
     }
 }
 ```
 
+### Response:
+
+> Error: 422 Unprocessable Entity
+> Jika data duplikat
+
+```json
+{
+    "success": false,
+    "message": "Validasi gagal",
+    "errors": {
+        "name": ["Nama kategori sudah terdaftar."]
+    }
+}
+```
+
 ---
 
-### 🔍 Lihat Detail User
+### Lihat Detail Category
 
--   **URL:** `/api/users/{id}`
+-   **URL:** `/api/categories/{id}`
 -   **Method:** `GET`
 
 #### Response:
 
 ```json
 {
-    "message": "Detail user ditemukan",
+    "message": "Detail category ditemukan",
     "data": {
         "id": 1,
-        "name": "nama",
-        "email": "nama@example.test",
-        "role": "user",
+        "name": "Kategori A",
         "created_at": "...",
         "updated_at": "..."
     }
@@ -189,19 +200,16 @@ Content-Type: application/json
 
 ---
 
-### 📝 Update User
+### Update Category
 
--   **URL:** `/api/users/{id}`
+-   **URL:** `/api/categories/{id}`
 -   **Method:** `PUT`
 
 #### Request Body:
 
 ```json
 {
-    "name": "Nama Baru",
-    "email": "baru@example.com",
-    "password": "passwordBaru123",
-    "role": "instruktur"
+    "name": "Kategori Update"
 }
 ```
 
@@ -209,12 +217,10 @@ Content-Type: application/json
 
 ```json
 {
-    "message": "User berhasil diperbarui",
+    "message": "Category berhasil diperbarui",
     "data": {
         "id": 1,
-        "name": "Nama Baru",
-        "email": "baru@example.com",
-        "role": "instruktur",
+        "name": "Kategori Update",
         "created_at": "...",
         "updated_at": "..."
     }
@@ -223,17 +229,15 @@ Content-Type: application/json
 
 ---
 
-### ❌ Hapus User
+### Hapus Category
 
--   **URL:** `/api/users/{id}`
+-   **URL:** `/api/categories/{id}`
 -   **Method:** `DELETE`
 
 #### Response:
 
 ```json
 {
-    "message": "User berhasil dihapus"
+    "message": "Category berhasil dihapus"
 }
 ```
-
----

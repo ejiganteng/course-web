@@ -55,12 +55,13 @@ class AuthController extends Controller
                             ->createToken('api-token')
                             ->plainTextToken;
         return response()->json([
-            'message' => 'Berhasil login',
-            'data' => [
+            'message' => "Berhasil login",
+            "data" => [
                 'user_id' => auth()->user()->id,
+                'role' => auth()->user()->role,
                 'token' => $token
             ]
-        ], 200);
+        ]);
     }
 
     /**
