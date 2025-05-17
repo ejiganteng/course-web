@@ -241,3 +241,198 @@ Content-Type: application/json
     "message": "Category berhasil dihapus"
 }
 ```
+
+---
+
+## Course API
+
+> Semua endpoint Course memerlukan login. Beberapa endpoint hanya untuk instruktur.
+
+### Ambil Semua Course
+
+-   **URL:** `/api/courses`
+-   **Method:** `GET`
+-   **Headers:**
+
+```
+Authorization: Bearer {token}
+Content-Type: application/json
+```
+
+#### Query Parameter (opsional):
+
+-   `published=true` → hanya ambil yang sudah dipublish
+-   `published=false` → hanya ambil yang belum dipublish
+
+#### Response:
+
+```json
+{
+    "message": "Daftar kursus",
+    "data": [
+        {
+            "id": 1,
+            "instructor_id": 2,
+            "title": "Belajar Vue.js",
+            "description": "Panduan lengkap Vue",
+            "price": "149.99",
+            "thumbnail": "url_gambar.jpg",
+            "is_published": true,
+            "created_at": "...",
+            "updated_at": "...",
+            "instructor": {
+                "id": 2,
+                "name": "Instruktur A",
+                "email": "a@example.com"
+            }
+        }
+    ]
+}
+```
+
+---
+
+### Tambah Course
+
+-   **URL:** `/api/courses`
+-   **Method:** `POST`
+-   **Headers:**
+
+```
+Authorization: Bearer {token}
+Content-Type: application/json
+```
+
+#### Request Body:
+
+```json
+{
+    "title": "Laravel Dasar",
+    "description": "Belajar Laravel dari nol",
+    "price": 99.99,
+    "thumbnail": "https://image.url",
+    "is_published": true
+}
+```
+
+#### Response:
+
+Status: 201 Created
+
+```json
+{
+    "message": "Kursus berhasil dibuat",
+    "data": {
+        "id": 3,
+        "instructor_id": 2,
+        "title": "Laravel Dasar",
+        "description": "Belajar Laravel dari nol",
+        "price": "99.99",
+        "thumbnail": "https://image.url",
+        "is_published": true,
+        "created_at": "...",
+        "updated_at": "..."
+    }
+}
+```
+
+---
+
+### Lihat Detail Course
+
+-   **URL:** `/api/courses/{id}`
+-   **Method:** `GET`
+-   **Headers:**
+
+```
+Authorization: Bearer {token}
+Content-Type: application/json
+```
+
+#### Response:
+
+```json
+{
+    "message": "Detail kursus",
+    "data": {
+        "id": 3,
+        "instructor_id": 2,
+        "title": "Laravel Dasar",
+        "description": "Belajar Laravel dari nol",
+        "price": "99.99",
+        "thumbnail": "https://image.url",
+        "is_published": true,
+        "created_at": "...",
+        "updated_at": "...",
+        "instructor": {
+            "id": 2,
+            "name": "Instruktur A",
+            "email": "a@example.com"
+        }
+    }
+}
+```
+
+---
+
+### Update Course
+
+-   **URL:** `/api/courses/{id}`
+-   **Method:** `PUT`
+-   **Headers:**
+
+```
+Authorization: Bearer {token}
+Content-Type: application/json
+```
+
+#### Request Body:
+
+```json
+{
+    "title": "Laravel Lanjut",
+    "description": "Level lanjut Laravel",
+    "price": 199.99,
+    "thumbnail": "https://image.url",
+    "is_published": false
+}
+```
+
+#### Response:
+
+```json
+{
+    "message": "Kursus berhasil diperbarui",
+    "data": {
+        "id": 3,
+        "title": "Laravel Lanjut",
+        "description": "Level lanjut Laravel",
+        "price": "199.99",
+        "thumbnail": "https://image.url",
+        "is_published": false,
+        "created_at": "...",
+        "updated_at": "..."
+    }
+}
+```
+
+---
+
+### Hapus Course
+
+-   **URL:** `/api/courses/{id}`
+-   **Method:** `DELETE`
+-   **Headers:**
+
+```
+Authorization: Bearer {token}
+Content-Type: application/json
+```
+
+#### Response:
+
+```json
+{
+    "message": "Kursus berhasil dihapus"
+}
+```

@@ -1,0 +1,66 @@
+<?php
+namespace App\Http\Controllers\Api;
+
+use App\Http\Controllers\Controller;
+use App\Models\Course;
+use App\Http\Requests\CourseRequest;
+use Illuminate\Http\Request;
+
+class CourseController extends Controller
+{
+    public function index(Request $request)
+    {
+        $query = Course::query();
+
+        if ($request->has('published')) {
+            $query->where('is_published', $request->published);
+        }
+
+        return response()->json([
+            'message' => 'Daftar kursus',
+            'data' => $query->with(['instructor','categories'])->get()
+        ]);
+    }
+
+    public function store(CourseRequest $request)
+    {
+        $course = Course::create([
+            ...$request->validated(),
+            'instructor_id' => auth()->id()
+        ]);
+        $course->categories()->sync($request->category_ids);
+
+        return response()->json([
+            'message' => 'Kursus berhasil dibuat',
+            'data' => $course->load(['instructor', 'categories'])
+        ], 201);
+    }
+
+    public function show(Course $course)
+    {
+        return response()->json([
+            'message' => 'Detail kursus',
+            'data' => $course->load(['instructor', 'categories'])
+        ]);
+    }
+
+    public function update(CourseRequest $request, Course $course)
+    {
+        $course->update($request->validated());
+        $course->categories()->sync($request->category_ids);
+
+        return response()->json([
+            'message' => 'Kursus berhasil diperbarui',
+            'data' => $course->load(['instructor', 'categories'])
+        ]);
+    }
+
+    public function destroy(Course $course)
+    {
+        $course->delete();
+
+        return response()->json([
+            'message' => 'Kursus berhasil dihapus'
+        ]);
+    }
+}

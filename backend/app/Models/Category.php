@@ -9,4 +9,10 @@ class Category extends Model
     protected $fillable =[
         "name"
     ];
+
+    public function courses()
+    {
+        return $this->belongsToMany(Course::class, 'course_categories');
+    }
+
 }

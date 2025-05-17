@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CategoryController;
+use App\Http\Controllers\Api\CourseController;
 use App\Http\Controllers\Api\UserController;
 use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Route;
@@ -33,4 +34,12 @@ Route::middleware(['auth:sanctum','admin'])->group(function () {
     Route::get('/categories/{id}', [CategoryController::class, 'show'])->name('api.categories.show');
     Route::put('/categories/{id}', [CategoryController::class, 'update'])->name('api.categories.update');
     Route::delete('/categories/{id}', [CategoryController::class, 'destroy'])->name('api.categories.destroy');
+});
+
+Route::middleware(['auth:sanctum'])->group(function () {
+    Route::get('/courses', [CourseController::class, 'index']);
+    Route::post('/courses', [CourseController::class, 'store'])->middleware('instruktur');
+    Route::get('/courses/{course}', [CourseController::class, 'show']);
+    Route::put('/courses/{course}', [CourseController::class, 'update'])->middleware('instruktur');
+    Route::delete('/courses/{course}', [CourseController::class, 'destroy'])->middleware('instruktur');
 });
