@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { FiEdit, FiTrash, FiPlus, FiSearch } from 'react-icons/fi';
 import AdminNav from '@/components/admin/navbar';
-import AdminHeader from '@/components/admin/header';
 import { toast } from 'react-toastify';
 
 interface User {
@@ -175,7 +174,6 @@ export default function AdminPage() {
       <AdminNav />
       
       <div className="flex-1 ml-64 mt-18">
-        <AdminHeader />
         
         <main className="p-8 bg-white rounded-t-4xl shadow">
           <div className="flex justify-between items-center mb-6">
