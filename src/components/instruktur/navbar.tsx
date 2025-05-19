@@ -1,20 +1,21 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
-import { FiHome, FiUsers, FiPieChart, FiSettings, FiLogOut } from "react-icons/fi";
+import { FiHome, FiBook, FiCalendar, FiUsers, FiSettings, FiLogOut } from "react-icons/fi";
 import { toast } from "react-toastify";
 
 const navItems = [
-  { href: "/admin", icon: FiHome, label: "Dashboard" },
-  { href: "/admin/users", icon: FiUsers, label: "Users" },
-  { href: "/admin/analytics", icon: FiPieChart, label: "Analytics" },
-  { href: "/admin/settings", icon: FiSettings, label: "Settings" },
+  { href: "/instruktur", icon: FiHome, label: "Dashboard" },
+  { href: "/instruktur/courses", icon: FiBook, label: "Kursus" },
+  { href: "/instruktur/schedule", icon: FiCalendar, label: "Jadwal" },
+  { href: "/instruktur/students", icon: FiUsers, label: "Peserta" },
+  { href: "/instruktur/settings", icon: FiSettings, label: "Pengaturan" },
 ];
 
-export default function AdminNav() {
+export default function InstrukturNav() {
   const pathname = usePathname();
   const [userData, setUserData] = useState({
     id: "",
@@ -83,20 +84,20 @@ export default function AdminNav() {
     <motion.nav
       initial={{ x: -20, opacity: 0 }}
       animate={{ x: 0, opacity: 1 }}
-      className="fixed h-screen w-64 bg-gray-800 text-white flex flex-col shadow-xl"
+      className="fixed h-screen w-64 bg-blue-800 text-white flex flex-col shadow-xl"
     >
-      <div className="p-6 border-b border-gray-700">
-        <h1 className="text-xl font-bold">Admin Panel</h1>
+      <div className="p-6 border-b border-blue-700">
+        <h1 className="text-xl font-bold">Panel Instruktur</h1>
         <div className="mt-2 text-gray-300">
           {isLoading ? (
-            <p className="text-sm text-gray-400">Loading user data...</p>
+            <p className="text-sm text-gray-300">Loading user data...</p>
           ) : (
             <>
               <p className="font-medium text-white">{userData.name || "Unknown User"}</p>
-              <div className="flex items-center mt-1 text-sm text-gray-400">
+              <div className="flex items-center mt-1 text-sm text-gray-300">
                 <p>ID: {userData.id || "N/A"}</p>
                 {userData.role && (
-                  <span className="ml-2 capitalize px-2 py-1 bg-indigo-600 rounded-md text-xs text-white">
+                  <span className="ml-2 capitalize px-2 py-1 bg-blue-600 rounded-md text-xs text-white">
                     {userData.role}
                   </span>
                 )}
@@ -113,8 +114,8 @@ export default function AdminNav() {
             href={item.href}
             className={`flex items-center p-3 rounded-lg transition-colors ${
               pathname === item.href
-                ? "bg-indigo-600 text-white"
-                : "hover:bg-gray-700 text-gray-300"
+                ? "bg-blue-600 text-white"
+                : "hover:bg-blue-700 text-gray-300"
             }`}
           >
             <item.icon className="w-5 h-5 mr-3" />
@@ -123,10 +124,10 @@ export default function AdminNav() {
         ))}
       </div>
 
-      <div className="p-4 border-t border-gray-700">
+      <div className="p-4 border-t border-blue-700">
         <button
           onClick={handleLogout}
-          className="w-full flex items-center p-3 text-red-400 hover:bg-red-900/20 rounded-lg transition-colors"
+          className="w-full flex items-center p-3 text-red-300 hover:bg-red-900/20 rounded-lg transition-colors"
         >
           <FiLogOut className="w-5 h-5 mr-3" />
           Logout

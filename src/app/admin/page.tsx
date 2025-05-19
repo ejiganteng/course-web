@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { FiEdit, FiTrash, FiPlus, FiSearch } from 'react-icons/fi';
-import AdminNav from '@/components/admin/navbar';
 import { toast } from 'react-toastify';
 
 interface User {
@@ -18,13 +18,12 @@ interface UserForm {
   name: string;
   email: string;
   password: string;
-  password_confirmation: string;
+  password_confirmation?: string;
   role: string;
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
-
 export default function AdminPage() {
+  const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -41,19 +40,28 @@ export default function AdminPage() {
 
   const fetchUsers = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/users`, {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        router.push('/auth');
+        return;
+      }
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${token}`,
         },
       });
 
       if (response.status === 401) {
-        window.location.href = '/auth';
+        localStorage.removeItem('token');
+        router.push('/auth');
         return;
       }
 
       const data = await response.json();
-      setUsers(data.data);
+      if (data && data.data) {
+        setUsers(data.data);
+      }
     } catch (error) {
       toast.error('Gagal memuat data pengguna');
     } finally {
@@ -67,7 +75,8 @@ export default function AdminPage() {
 
   const filteredUsers = users.filter(user =>
     user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchTerm.toLowerCase())
+    user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.role.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleAddUser = async (e: React.FormEvent) => {
@@ -78,17 +87,17 @@ export default function AdminPage() {
         return;
       }
 
-      const response = await fetch(`${API_BASE_URL}/register`, {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
           name: form.name,
           email: form.email,
           password: form.password,
-          password_confirmation: form.password_confirmation,
           role: form.role
         }),
       });
@@ -119,18 +128,25 @@ export default function AdminPage() {
     if (!selectedUser) return;
 
     try {
-      const response = await fetch(`${API_BASE_URL}/users/${selectedUser.id}`, {
+      const token = localStorage.getItem('token');
+      const payload: any = {
+        name: form.name,
+        email: form.email,
+        role: form.role,
+      };
+
+      // Only include password if it's provided
+      if (form.password) {
+        payload.password = form.password;
+      }
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/${selectedUser.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          name: form.name,
-          email: form.email,
-          role: form.role,
-          password: form.password || undefined
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
@@ -150,10 +166,11 @@ export default function AdminPage() {
     if (!confirm('Apakah Anda yakin ingin menghapus pengguna ini?')) return;
 
     try {
-      const response = await fetch(`${API_BASE_URL}/users/${id}`, {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/${id}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${token}`,
         },
       });
 
@@ -170,12 +187,14 @@ export default function AdminPage() {
   };
 
   return (
-    <div className="flex">
-      <AdminNav />
-      
-      <div className="flex-1 ml-64 mt-18">
+    <div className="flex h-screen bg-gray-100">
+      <div className="flex-1 ml-64 p-8 overflow-auto">
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold text-gray-800">Manajemen Pengguna</h1>
+          <p className="text-gray-600">Kelola pengguna sistem</p>
+        </div>
         
-        <main className="p-8 bg-white rounded-t-4xl shadow">
+        <div className="bg-white rounded-lg shadow-md p-6">
           <div className="flex justify-between items-center mb-6">
             <div className="relative w-64">
               <FiSearch className="absolute left-3 top-3 text-gray-400" />
@@ -206,7 +225,10 @@ export default function AdminPage() {
           </div>
 
           {isLoading ? (
-            <div className="text-center py-8">Memuat data...</div>
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+              <p className="mt-2 text-gray-600">Memuat data...</p>
+            </div>
           ) : (
             <motion.div
               initial={{ opacity: 0 }}
@@ -216,182 +238,252 @@ export default function AdminPage() {
               <table className="w-full">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left">Nama</th>
-                    <th className="px-6 py-3 text-left">Email</th>
-                    <th className="px-6 py-3 text-left">Role</th>
-                    <th className="px-6 py-3 text-left">Tanggal Daftar</th>
-                    <th className="px-6 py-3 text-left">Aksi</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal Daftar</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
                   </tr>
                 </thead>
-                <tbody>
-                  {filteredUsers.map((user) => (
-                    <tr key={user.id} className="border-t">
-                      <td className="px-6 py-4">{user.name}</td>
-                      <td className="px-6 py-4">{user.email}</td>
-                      <td className="px-6 py-4 capitalize">{user.role}</td>
-                      <td className="px-6 py-4">
-                        {new Date(user.created_at).toLocaleDateString()}
-                      </td>
-                      <td className="px-6 py-4 flex space-x-4">
-                        <button
-                          onClick={() => {
-                            setSelectedUser(user);
-                            setForm({ 
-                              name: user.name, 
-                              email: user.email,
-                              password: '',
-                              password_confirmation: '',
-                              role: user.role
-                            });
-                            setShowEditModal(true);
-                          }}
-                          className="text-blue-600 hover:text-blue-800"
-                        >
-                          <FiEdit />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(user.id)}
-                          className="text-red-600 hover:text-red-800"
-                        >
-                          <FiTrash />
-                        </button>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {filteredUsers.length > 0 ? (
+                    filteredUsers.map((user) => (
+                      <tr key={user.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.id}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{user.name}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.email}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                            user.role === 'admin' 
+                              ? 'bg-red-100 text-red-800' 
+                              : user.role === 'instruktur' 
+                              ? 'bg-blue-100 text-blue-800'
+                              : 'bg-green-100 text-green-800'
+                          }`}>
+                            {user.role}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {new Date(user.created_at).toLocaleDateString('id-ID', {
+                            day: '2-digit',
+                            month: 'short',
+                            year: 'numeric'
+                          })}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          <div className="flex space-x-3">
+                            <button
+                              onClick={() => {
+                                setSelectedUser(user);
+                                setForm({ 
+                                  name: user.name, 
+                                  email: user.email,
+                                  password: '',
+                                  role: user.role
+                                });
+                                setShowEditModal(true);
+                              }}
+                              className="text-blue-600 hover:text-blue-900"
+                            >
+                              <FiEdit className="h-5 w-5" />
+                            </button>
+                            <button
+                              onClick={() => handleDelete(user.id)}
+                              className="text-red-600 hover:text-red-900"
+                            >
+                              <FiTrash className="h-5 w-5" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
+                        Tidak ada data pengguna yang ditemukan
                       </td>
                     </tr>
-                  ))}
+                  )}
                 </tbody>
               </table>
             </motion.div>
           )}
-        </main>
+        </div>
 
         {/* Add User Modal */}
         {showAddModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-            <div className="bg-white p-8 rounded-lg w-96">
-              <h3 className="text-xl font-bold mb-4">Tambah Pengguna</h3>
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-white p-8 rounded-lg shadow-xl w-96 max-w-md"
+            >
+              <h3 className="text-xl font-bold mb-6 text-gray-800">Tambah Pengguna Baru</h3>
               <form onSubmit={handleAddUser}>
                 <div className="space-y-4">
-                  <input
-                    type="text"
-                    placeholder="Nama"
-                    className="w-full p-2 border rounded"
-                    value={form.name}
-                    onChange={(e) => setForm({ ...form, name: e.target.value })}
-                    required
-                  />
-                  <input
-                    type="email"
-                    placeholder="Email"
-                    className="w-full p-2 border rounded"
-                    value={form.email}
-                    onChange={(e) => setForm({ ...form, email: e.target.value })}
-                    required
-                  />
-                  <select
-                    className="w-full p-2 border rounded"
-                    value={form.role}
-                    onChange={(e) => setForm({ ...form, role: e.target.value })}
-                    required
-                  >
-                    <option value="user">User</option>
-                    <option value="admin">Admin</option>
-                    <option value="instruktur">Instruktur</option>
-                  </select>
-                  <input
-                    type="password"
-                    placeholder="Password"
-                    className="w-full p-2 border rounded"
-                    value={form.password}
-                    onChange={(e) => setForm({ ...form, password: e.target.value })}
-                    required
-                  />
-                  <input
-                    type="password"
-                    placeholder="Konfirmasi Password"
-                    className="w-full p-2 border rounded"
-                    value={form.password_confirmation}
-                    onChange={(e) => setForm({ ...form, password_confirmation: e.target.value })}
-                    required
-                  />
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Nama</label>
+                    <input
+                      type="text"
+                      placeholder="Nama Lengkap"
+                      className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      value={form.name}
+                      onChange={(e) => setForm({ ...form, name: e.target.value })}
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                    <input
+                      type="email"
+                      placeholder="Email"
+                      className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      value={form.email}
+                      onChange={(e) => setForm({ ...form, email: e.target.value })}
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+                    <select
+                      className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      value={form.role}
+                      onChange={(e) => setForm({ ...form, role: e.target.value })}
+                      required
+                    >
+                      <option value="user">User</option>
+                      <option value="admin">Admin</option>
+                      <option value="instruktur">Instruktur</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                    <input
+                      type="password"
+                      placeholder="Password"
+                      className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      value={form.password}
+                      onChange={(e) => setForm({ ...form, password: e.target.value })}
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Konfirmasi Password</label>
+                    <input
+                      type="password"
+                      placeholder="Konfirmasi Password"
+                      className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      value={form.password_confirmation}
+                      onChange={(e) => setForm({ ...form, password_confirmation: e.target.value })}
+                      required
+                    />
+                  </div>
                 </div>
+                
                 <div className="mt-6 flex justify-end space-x-4">
                   <button
                     type="button"
                     onClick={() => setShowAddModal(false)}
-                    className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                    className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900"
                   >
                     Batal
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium"
                   >
                     Simpan
                   </button>
                 </div>
               </form>
-            </div>
+            </motion.div>
           </div>
         )}
 
         {/* Edit User Modal */}
         {showEditModal && selectedUser && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-            <div className="bg-white p-8 rounded-lg w-96">
-              <h3 className="text-xl font-bold mb-4">Edit Pengguna</h3>
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-white p-8 rounded-lg shadow-xl w-96 max-w-md"
+            >
+              <h3 className="text-xl font-bold mb-6 text-gray-800">Edit Pengguna: {selectedUser.name}</h3>
               <form onSubmit={handleEditUser}>
                 <div className="space-y-4">
-                  <input
-                    type="text"
-                    placeholder="Nama"
-                    className="w-full p-2 border rounded"
-                    value={form.name}
-                    onChange={(e) => setForm({ ...form, name: e.target.value })}
-                    required
-                  />
-                  <input
-                    type="email"
-                    placeholder="Email"
-                    className="w-full p-2 border rounded"
-                    value={form.email}
-                    onChange={(e) => setForm({ ...form, email: e.target.value })}
-                    required
-                  />
-                  <select
-                    className="w-full p-2 border rounded"
-                    value={form.role}
-                    onChange={(e) => setForm({ ...form, role: e.target.value })}
-                    required
-                  >
-                    <option value="user">User</option>
-                    <option value="admin">Admin</option>
-                    <option value="instruktur">Instruktur</option>
-                  </select>
-                  <input
-                    type="password"
-                    placeholder="Password (Biarkan kosong jika tidak diubah)"
-                    className="w-full p-2 border rounded"
-                    value={form.password}
-                    onChange={(e) => setForm({ ...form, password: e.target.value })}
-                  />
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Nama</label>
+                    <input
+                      type="text"
+                      placeholder="Nama Lengkap"
+                      className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      value={form.name}
+                      onChange={(e) => setForm({ ...form, name: e.target.value })}
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                    <input
+                      type="email"
+                      placeholder="Email"
+                      className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      value={form.email}
+                      onChange={(e) => setForm({ ...form, email: e.target.value })}
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+                    <select
+                      className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      value={form.role}
+                      onChange={(e) => setForm({ ...form, role: e.target.value })}
+                      required
+                    >
+                      <option value="user">User</option>
+                      <option value="admin">Admin</option>
+                      <option value="instruktur">Instruktur</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                    <input
+                      type="password"
+                      placeholder="Biarkan kosong jika tidak ingin mengubah password"
+                      className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      value={form.password}
+                      onChange={(e) => setForm({ ...form, password: e.target.value })}
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Biarkan kosong jika tidak ingin mengubah password</p>
+                  </div>
                 </div>
+                
                 <div className="mt-6 flex justify-end space-x-4">
                   <button
                     type="button"
                     onClick={() => setShowEditModal(false)}
-                    className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                    className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900"
                   >
                     Batal
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium"
                   >
-                    Simpan
+                    Simpan Perubahan
                   </button>
                 </div>
               </form>
-            </div>
+            </motion.div>
           </div>
         )}
       </div>

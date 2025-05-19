@@ -12,17 +12,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { FaGoogle, FaFacebook } from "react-icons/fa";
 import Link from "next/link";
-import { toast } from "react-toastify";
 import { loginUser, registerUser, getRedirectPath } from "@/utils/auth-utils";
-
-interface AuthResponse {
-  message: string;
-  data: {
-    token: string;
-    role: string;
-    user_id: number;
-  };
-}
 
 type FormInput = {
   id: string;
@@ -88,13 +78,16 @@ export default function AuthPage() {
 
   useEffect(() => {
     setIsMounted(true);
-    // Clear auth data jika sudah login
-    if (typeof window !== "undefined" && localStorage.getItem("token")) {
-      const role = localStorage.getItem("role");
-      if (role) {
-        router.push(getRedirectPath(role));
-      } else {
-        router.push("/dashboard");
+    // Check if user is already logged in
+    if (typeof window !== "undefined") {
+      const token = localStorage.getItem("token");
+      if (token) {
+        const role = localStorage.getItem("role");
+        if (role) {
+          router.push(getRedirectPath(role));
+        } else {
+          router.push("/dashboard");
+        }
       }
     }
   }, [router]);
@@ -108,13 +101,21 @@ export default function AuthPage() {
       if (isLogin) {
         // Handle login
         const response = await loginUser(formData.email, formData.password);
-
-        // Redirect based on role
-        router.push(getRedirectPath(response.data.role));
+        
+        if (response && response.data) {
+          // Store user data in localStorage
+          localStorage.setItem("token", response.data.token);
+          localStorage.setItem("user_id", response.data.user_id.toString());
+          localStorage.setItem("role", response.data.role);
+          
+          // Redirect based on role
+          const redirectPath = getRedirectPath(response.data.role);
+          router.push(redirectPath);
+        }
       } else {
         // Handle registration
         if (formData.password !== formData.confirmPassword) {
-          throw new Error("Password tidak sama");
+          throw new Error("Password tidak sama dengan konfirmasi password");
         }
 
         await registerUser(
@@ -130,12 +131,20 @@ export default function AuthPage() {
           formData.password
         );
 
-        // Redirect based on role
-        router.push(getRedirectPath(loginResponse.data.role));
+        if (loginResponse && loginResponse.data) {
+          // Store user data in localStorage
+          localStorage.setItem("token", loginResponse.data.token);
+          localStorage.setItem("user_id", loginResponse.data.user_id.toString());
+          localStorage.setItem("role", loginResponse.data.role);
+          
+          // Redirect based on role
+          const redirectPath = getRedirectPath(loginResponse.data.role);
+          router.push(redirectPath);
+        }
       }
     } catch (err) {
       const error = err as Error;
-      setError(error.message);
+      setError(error.message || "Terjadi kesalahan saat proses autentikasi");
     } finally {
       setIsLoading(false);
     }
@@ -149,14 +158,15 @@ export default function AuthPage() {
   };
 
   const renderInput = (input: FormInput) => {
-    const shouldShow = input.show === "both" || !isLogin;
+    const shouldShow = input.show === "both" || input.show === "register" && !isLogin;
     if (!shouldShow) return null;
 
     return (
       <motion.div
         key={input.id}
-        initial={{ opacity: 0, x: -20 }}
+        initial={input.animate && !isLogin ? { opacity: 0, x: -20 } : { opacity: 1, x: 0 }}
         animate={{ opacity: 1, x: 0 }}
+        exit={input.animate && isLogin ? { opacity: 0, x: -20 } : undefined}
         className="relative"
       >
         <input.icon className="absolute top-4 left-4 text-gray-400" />
@@ -256,7 +266,11 @@ export default function AuthPage() {
               {isLogin ? "Belum punya akun? " : "Sudah punya akun? "}
               <button
                 type="button"
-                onClick={() => setIsLogin(!isLogin)}
+                onClick={() => {
+                  setIsLogin(!isLogin);
+                  setError("");
+                  setFormData(defaultFormData);
+                }}
                 className="text-purple-400 hover:text-purple-300 font-bold"
               >
                 {isLogin ? "Daftar disini" : "Masuk disini"}

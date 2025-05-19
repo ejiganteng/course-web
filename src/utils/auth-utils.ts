@@ -1,4 +1,3 @@
-// auth-utils.ts
 import { toast } from "react-toastify";
 
 export interface AuthResponse {
@@ -20,6 +19,11 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/a
  */
 export const loginUser = async (email: string, password: string): Promise<AuthResponse> => {
   try {
+    // Validate inputs
+    if (!email || !password) {
+      throw new Error("Email dan password harus diisi");
+    }
+
     const response = await fetch(`${API_BASE_URL}/login`, {
       method: "POST",
       headers: {
@@ -32,7 +36,7 @@ export const loginUser = async (email: string, password: string): Promise<AuthRe
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.message || "Login gagal");
+      throw new Error(data.message || "Login gagal, periksa email dan password Anda");
     }
 
     // Store auth data in localStorage
@@ -64,18 +68,37 @@ export const registerUser = async (
   password_confirmation: string
 ): Promise<AuthResponse> => {
   try {
+    // Validate inputs
+    if (!name || !email || !password || !password_confirmation) {
+      throw new Error("Semua field harus diisi");
+    }
+
+    if (password !== password_confirmation) {
+      throw new Error("Password dan konfirmasi password tidak sama");
+    }
+
     const response = await fetch(`${API_BASE_URL}/register`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "Accept": "application/json",
       },
-      body: JSON.stringify({ name, email, password, password_confirmation }),
+      body: JSON.stringify({ 
+        name, 
+        email, 
+        password, 
+        password_confirmation 
+      }),
     });
 
     const data = await response.json();
 
     if (!response.ok) {
+      // Handle specific error cases
+      if (data.errors) {
+        const errorMessages = Object.values(data.errors).flat();
+        throw new Error(errorMessages[0] as string || "Registrasi gagal");
+      }
       throw new Error(data.message || "Registrasi gagal");
     }
 
@@ -84,6 +107,49 @@ export const registerUser = async (
   } catch (error) {
     const err = error as Error;
     toast.error(err.message);
+    throw error;
+  }
+};
+
+/**
+ * Logout function that invalidates the current token
+ * @returns Promise<void>
+ */
+export const logoutUser = async (): Promise<void> => {
+  try {
+    const token = localStorage.getItem("token");
+    
+    if (!token) {
+      throw new Error("Tidak ada sesi yang aktif");
+    }
+    
+    const response = await fetch(`${API_BASE_URL}/logout`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+    });
+
+    if (!response.ok) {
+      const data = await response.json();
+      throw new Error(data.message || "Logout gagal");
+    }
+
+    // Clear auth data from localStorage
+    localStorage.removeItem("token");
+    localStorage.removeItem("user_id");
+    localStorage.removeItem("role");
+
+    toast.success("Logout berhasil");
+  } catch (error) {
+    const err = error as Error;
+    toast.error(err.message);
+    // Clear localStorage anyway in case of network errors
+    localStorage.removeItem("token");
+    localStorage.removeItem("user_id");
+    localStorage.removeItem("role");
     throw error;
   }
 };
@@ -130,4 +196,42 @@ export const getRedirectPath = (role: string): string => {
     default:
       return "/dashboard";
   }
+};
+
+/**
+ * Get authentication headers for API requests
+ * @returns Headers object with Authorization token
+ */
+export const getAuthHeaders = (): HeadersInit => {
+  const token = localStorage.getItem("token");
+  return {
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+    "Authorization": `Bearer ${token}`
+  };
+};
+
+/**
+ * Create a protected fetch function that includes auth token
+ * @param url API endpoint
+ * @param options Fetch options
+ * @returns Response from API
+ */
+export const protectedFetch = async (url: string, options: RequestInit = {}): Promise<Response> => {
+  if (!isAuthenticated()) {
+    throw new Error("User not authenticated");
+  }
+  
+  const token = localStorage.getItem("token");
+  const headers = {
+    ...options.headers,
+    "Authorization": `Bearer ${token}`,
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+  };
+  
+  return fetch(`${API_BASE_URL}${url}`, {
+    ...options,
+    headers,
+  });
 };
