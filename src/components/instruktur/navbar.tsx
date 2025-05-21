@@ -83,7 +83,7 @@ export default function InstrukturNav() {
     <motion.nav
       initial={{ x: -20, opacity: 0 }}
       animate={{ x: 0, opacity: 1 }}
-      className="fixed h-screen w-64 bg-gray-800 text-white flex flex-col shadow-xl"
+      className="fixed h-screen w-64 bg-gray-800 text-white flex flex-col shadow-xl rounded-r-4xl"
     >
       <div className="p-6 border-b border-gray-700">
         <h1 className="text-xl font-bold">Instruktur Panel</h1>

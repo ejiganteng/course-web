@@ -39,10 +39,17 @@ export const loginUser = async (email: string, password: string): Promise<AuthRe
       throw new Error(data.message || "Login gagal, periksa email dan password Anda");
     }
 
+    // Make sure all required fields are present
+    if (!data.data || !data.data.token || !data.data.role || data.data.user_id === undefined) {
+      throw new Error("Format response tidak valid");
+    }
+
     // Store auth data in localStorage
-    localStorage.setItem("token", data.data.token);
-    localStorage.setItem("user_id", data.data.user_id.toString());
-    localStorage.setItem("role", data.data.role);
+    setAuthData({
+      token: data.data.token,
+      user_id: data.data.user_id,
+      role: data.data.role
+    });
 
     toast.success("Login berhasil");
     return data;
@@ -138,18 +145,13 @@ export const logoutUser = async (): Promise<void> => {
     }
 
     // Clear auth data from localStorage
-    localStorage.removeItem("token");
-    localStorage.removeItem("user_id");
-    localStorage.removeItem("role");
-
+    clearAuthData();
     toast.success("Logout berhasil");
   } catch (error) {
     const err = error as Error;
     toast.error(err.message);
     // Clear localStorage anyway in case of network errors
-    localStorage.removeItem("token");
-    localStorage.removeItem("user_id");
-    localStorage.removeItem("role");
+    clearAuthData();
     throw error;
   }
 };
@@ -183,6 +185,29 @@ export const getUserId = (): number | null => {
 };
 
 /**
+ * Set auth data to localStorage with consistent implementation
+ * @param data Auth data including token, user_id and role
+ */
+export const setAuthData = (data: { token: string, user_id: number, role: string }): void => {
+  if (typeof window === "undefined") return;
+  
+  localStorage.setItem("token", data.token);
+  localStorage.setItem("user_id", data.user_id.toString());
+  localStorage.setItem("role", data.role);
+};
+
+/**
+ * Clear all auth data from localStorage
+ */
+export const clearAuthData = (): void => {
+  if (typeof window === "undefined") return;
+  
+  localStorage.removeItem("token");
+  localStorage.removeItem("user_id");
+  localStorage.removeItem("role");
+};
+
+/**
  * Get redirect path based on user role
  * @param role User role
  * @returns path to redirect user to
@@ -194,7 +219,7 @@ export const getRedirectPath = (role: string): string => {
     case "instruktur":
       return "/instruktur";
     default:
-      return "/dashboard";
+      return "/user";
   }
 };
 

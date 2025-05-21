@@ -12,7 +12,14 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { FaGoogle, FaFacebook } from "react-icons/fa";
 import Link from "next/link";
-import { loginUser, registerUser, getRedirectPath } from "@/utils/auth-utils";
+import { 
+  loginUser, 
+  registerUser, 
+  getRedirectPath, 
+  isAuthenticated, 
+  getUserRole, 
+  setAuthData 
+} from "@/utils/auth-utils";
 
 type FormInput = {
   id: string;
@@ -78,17 +85,11 @@ export default function AuthPage() {
 
   useEffect(() => {
     setIsMounted(true);
+    
     // Check if user is already logged in
-    if (typeof window !== "undefined") {
-      const token = localStorage.getItem("token");
-      if (token) {
-        const role = localStorage.getItem("role");
-        if (role) {
-          router.push(getRedirectPath(role));
-        } else {
-          router.push("/dashboard");
-        }
-      }
+    if (isAuthenticated()) {
+      const role = getUserRole();
+      router.push(role ? getRedirectPath(role) : "/dashboard");
     }
   }, [router]);
 
@@ -103,14 +104,15 @@ export default function AuthPage() {
         const response = await loginUser(formData.email, formData.password);
         
         if (response && response.data) {
-          // Store user data in localStorage
-          localStorage.setItem("token", response.data.token);
-          localStorage.setItem("user_id", response.data.user_id.toString());
-          localStorage.setItem("role", response.data.role);
+          // Store user data in localStorage using setAuthData utility function
+          setAuthData({
+            token: response.data.token,
+            user_id: response.data.user_id,
+            role: response.data.role
+          });
           
           // Redirect based on role
-          const redirectPath = getRedirectPath(response.data.role);
-          router.push(redirectPath);
+          router.push(getRedirectPath(response.data.role));
         }
       } else {
         // Handle registration
@@ -132,14 +134,15 @@ export default function AuthPage() {
         );
 
         if (loginResponse && loginResponse.data) {
-          // Store user data in localStorage
-          localStorage.setItem("token", loginResponse.data.token);
-          localStorage.setItem("user_id", loginResponse.data.user_id.toString());
-          localStorage.setItem("role", loginResponse.data.role);
+          // Store user data in localStorage using setAuthData utility function
+          setAuthData({
+            token: loginResponse.data.token,
+            user_id: loginResponse.data.user_id,
+            role: loginResponse.data.role
+          });
           
           // Redirect based on role
-          const redirectPath = getRedirectPath(loginResponse.data.role);
-          router.push(redirectPath);
+          router.push(getRedirectPath(loginResponse.data.role));
         }
       }
     } catch (err) {
@@ -158,7 +161,7 @@ export default function AuthPage() {
   };
 
   const renderInput = (input: FormInput) => {
-    const shouldShow = input.show === "both" || input.show === "register" && !isLogin;
+    const shouldShow = input.show === "both" || (input.show === "register" && !isLogin);
     if (!shouldShow) return null;
 
     return (
@@ -174,7 +177,7 @@ export default function AuthPage() {
           type={input.type}
           name={input.name}
           placeholder={input.placeholder}
-          className="w-full pl-10 pr-4 py-3 rounded-xl border-2 border-gray-700 bg-gray-800 focus:border-purple-500 focus:outline-none text-white"
+          className="w-full pl-10 pr-4 py-3 rounded-xl border-2 border-gray-700 bg-gray-800 focus:border-white focus:outline-none text-white"
           value={formData[input.name]}
           onChange={handleChange}
           required={input.show === "register" ? !isLogin : true}
@@ -227,7 +230,7 @@ export default function AuthPage() {
               whileTap={{ scale: 0.98 }}
               type="submit"
               disabled={isLoading}
-              className="w-full py-3 px-6 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg font-bold shadow-lg shadow-purple-600/20 hover:shadow-purple-600/40 transition-all flex items-center justify-center"
+              className="w-full py-3 px-6 bg-white text-black rounded-lg font-bold shadow-lg shadow-gray-200/20 hover:shadow-gray-200/40 transition-all flex items-center justify-center"
             >
               {isLoading ? (
                 <span className="animate-pulse">Memproses...</span>
@@ -271,7 +274,7 @@ export default function AuthPage() {
                   setError("");
                   setFormData(defaultFormData);
                 }}
-                className="text-purple-400 hover:text-purple-300 font-bold"
+                className="text-white hover:text-gray-400 font-bold"
               >
                 {isLogin ? "Daftar disini" : "Masuk disini"}
               </button>

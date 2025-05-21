@@ -16,23 +16,16 @@ export default function AuthLayout({
   const router = useRouter();
 
   useEffect(() => {
-    // Check if user is authenticated and prevent accessing auth page
     if (isAuthenticated()) {
       const role = getUserRole();
-      if (role) {
-        // Redirect to appropriate dashboard based on role
-        router.push(getRedirectPath(role));
-      } else {
-        // Fallback if role is somehow missing
-        router.push("/dashboard");
-      }
+      router.push(role ? getRedirectPath(role) : "/");
     }
   }, [router]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-800 to-black">
       <main>{children}</main>
-      
+            
       <ToastContainer
         position="top-right"
         autoClose={3000}

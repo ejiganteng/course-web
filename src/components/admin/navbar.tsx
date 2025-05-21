@@ -10,7 +10,7 @@ import { toast } from "react-toastify";
 const navItems = [
   { href: "/admin", icon: FiHome, label: "Dashboard" },
   { href: "/admin/users", icon: FiUsers, label: "Users" },
-  { href: "/admin/analytics", icon: FiPieChart, label: "Analytics" },
+  { href: "/admin/category", icon: FiPieChart, label: "Category" },
   { href: "/admin/settings", icon: FiSettings, label: "Settings" },
 ];
 
@@ -83,7 +83,7 @@ export default function AdminNav() {
     <motion.nav
       initial={{ x: -20, opacity: 0 }}
       animate={{ x: 0, opacity: 1 }}
-      className="fixed h-screen w-64 bg-gray-800 text-white flex flex-col shadow-xl"
+      className="fixed h-screen w-64 bg-gray-800 text-white flex flex-col shadow-xl rounded-r-4xl"
     >
       <div className="p-6 border-b border-gray-700">
         <h1 className="text-xl font-bold">Admin Panel</h1>

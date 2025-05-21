@@ -2,16 +2,18 @@
 
 import { useEffect, useState, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
-import { getRedirectPath } from '@/utils/auth-utils';
+import { isAuthenticated, getUserRole, getRedirectPath } from '@/utils/auth-utils';
 
 interface ProtectedRouteProps {
   children: ReactNode;
   allowedRoles?: string[];
+  redirectPath?: string;
 }
 
-export default function ProtectedRoute({ 
-  children, 
-  allowedRoles = [] 
+export default function ProtectedRoute({
+  children,
+  allowedRoles = [],
+  redirectPath = '/auth'
 }: ProtectedRouteProps) {
   const router = useRouter();
   const [isAuthorized, setIsAuthorized] = useState(false);
@@ -22,27 +24,26 @@ export default function ProtectedRoute({
       // Check if we're on the client side
       if (typeof window === 'undefined') return;
       
-      // Get token and role from localStorage
-      const token = localStorage.getItem('token');
-      const userRole = localStorage.getItem('role');
-      
-      // If no token exists, redirect to login
-      if (!token) {
-        router.push('/auth');
+      // Check if user is authenticated
+      if (!isAuthenticated()) {
+        router.push(redirectPath);
         return;
       }
+
+      // Get user role
+      const userRole = getUserRole();
       
-      // If there are allowedRoles specified, check if the user's role is included
+      // If specific roles are required, check if user has permission
       if (allowedRoles.length > 0) {
         if (userRole && allowedRoles.includes(userRole)) {
           setIsAuthorized(true);
         } else {
-          // If the user doesn't have the correct role, redirect to appropriate page
-          router.push(getRedirectPath(userRole || 'user'));
+          // Redirect to appropriate dashboard based on role
+          router.push(userRole ? getRedirectPath(userRole) : '/dashboard');
           return;
         }
       } else {
-        // If no specific roles are required, just check for token
+        // No specific roles required, just need to be authenticated
         setIsAuthorized(true);
       }
       
@@ -50,18 +51,18 @@ export default function ProtectedRoute({
     };
     
     checkAuth();
-  }, [router, allowedRoles]);
+  }, [router, allowedRoles, redirectPath]);
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-800 to-black">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto"></div>
-          <p className="mt-3 text-gray-600">Memuat...</p>
+          <p className="mt-3 text-gray-300">Memuat...</p>
         </div>
       </div>
     );
   }
 
-  return isAuthorized ? children : null;
+  return isAuthorized ? <>{children}</> : null;
 }
