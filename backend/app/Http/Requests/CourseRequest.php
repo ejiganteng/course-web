@@ -19,7 +19,14 @@ class CourseRequest extends FormRequest
             'thumbnail' => 'nullable|string',
             'is_published' => 'boolean',
             'category_ids' => 'array',
-            'category_ids.*' => 'exists:categories,id'
+            'category_ids.*' => 'exists:categories,id',
+
+            // Tambahan: PDF
+            'pdfs' => 'nullable|array',
+            'pdfs.*.title' => 'required_with:pdfs|string|max:255',
+            'pdfs.*.file' => 'required_with:pdfs|file|mimes:pdf|max:10240',
+            'pdfs.*.order_index' => 'nullable|integer',
         ];
     }
+
 }

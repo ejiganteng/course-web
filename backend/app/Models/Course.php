@@ -20,5 +20,10 @@ class Course extends Model
         return $this->belongsToMany(Category::class, 'course_categories');
     }
 
+    public function pdfs()
+    {
+        return $this->hasMany(Pdf::class)->orderBy("order_index");
+    }
+
 
 }

@@ -436,3 +436,59 @@ Content-Type: application/json
     "message": "Kursus berhasil dihapus"
 }
 ```
+
+## PDF
+
+### Upload PDF
+
+-   **URL:** `/api/courses/{id}/upload`
+-   **Method:** `POST`
+-   **Headers:**
+
+```
+Authorization: Bearer {token}
+Content-Type: application/json
+```
+
+#### Request Body:
+
+```json
+{
+  "pdfs": [
+    {
+      "title": "Modul 1",
+      "order_index": 1,
+      "file": [PDF file]
+    },
+    {
+      "title": "Modul 2",
+      "order_index": 2,
+      "file": [PDF file]
+    }
+  ]
+}
+```
+
+#### Response:
+
+Status: 201 Created
+
+```json
+{
+    "message": "PDF berhasil ditambahkan ke course",
+    "pdfs": [
+        {
+            "id": 1,
+            "title": "PDF 1",
+            "url": "http://localhost:8000/storage/course_pdfs/1747831260-682dc9dc23901-PDF1.pdf",
+            "order_index": "1"
+        },
+        {
+            "id": 2,
+            "title": "PDF 2",
+            "url": "http://localhost:8000/storage/course_pdfs/1747831260-682dc9dc35d38-PDF2.pdf",
+            "order_index": "2"
+        }
+    ]
+}
+```
