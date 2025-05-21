@@ -19,8 +19,13 @@ class CourseController extends Controller
 
         return response()->json([
             'message' => 'Daftar kursus',
-            'data' => $query->with(['instructor','categories'])->get()
+            'data' => $query->with(['instructor','categories', 'pdfs'])->get()
         ]);
+    }
+
+    public function showWithMaterials()
+    {
+        // 
     }
 
     public function store(CourseRequest $request)

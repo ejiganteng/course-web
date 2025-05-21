@@ -11,12 +11,8 @@ use Illuminate\Support\Facades\Storage;
 
 class PdfController extends Controller
 {
-    public function store(PdfRequest $request, Course $course)
+    public function upload(PdfRequest $request, $id)
     {
-        // Cek apakah user adalah instruktur dari course ini
-        if ($course->instructor_id !== auth()->id()) {
-            return response()->json(['message' => 'Unauthorized'], 403);
-        }
 
         $savedPdfs = [];
 
@@ -26,7 +22,7 @@ class PdfController extends Controller
             $path = $file->storeAs('public/course_pdfs', $fileName);
 
             $pdf = Pdf::create([
-                'course_id' => $course->id,
+                'course_id' => $id,
                 'title' => $pdfData['title'],
                 'file_path' => $path,
                 'order_index' => $pdfData['order_index'] ?? 0

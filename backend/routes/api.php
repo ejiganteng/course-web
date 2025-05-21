@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\CourseController;
 use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\PdfController;
 use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -42,4 +43,5 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/courses/{course}', [CourseController::class, 'show']);
     Route::put('/courses/{course}', [CourseController::class, 'update'])->middleware('instruktur');
     Route::delete('/courses/{course}', [CourseController::class, 'destroy'])->middleware('instruktur');
+    Route::post('/courses/{id}/upload', [PdfController::class, 'upload'])->middleware('instruktur');
 });
