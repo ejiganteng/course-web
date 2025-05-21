@@ -338,7 +338,7 @@ Status: 201 Created
 
 ---
 
-### Lihat Detail Course
+### Lihat Detail Course Beserta PDF
 
 -   **URL:** `/api/courses/{id}`
 -   **Method:** `GET`
@@ -355,20 +355,57 @@ Content-Type: application/json
 {
     "message": "Detail kursus",
     "data": {
-        "id": 3,
-        "instructor_id": 2,
-        "title": "Laravel Dasar",
-        "description": "Belajar Laravel dari nol",
-        "price": "99.99",
-        "thumbnail": "https://image.url",
-        "is_published": true,
-        "created_at": "...",
-        "updated_at": "...",
+        "id": 1,
+        "instructor_id": 3,
+        "title": "testing",
+        "description": "testing deskripsi",
+        "price": "1000.00",
+        "thumbnail": "Ini thumbnail",
+        "is_published": 1,
+        "created_at": "2025-05-21T09:36:40.000000Z",
+        "updated_at": "2025-05-21T09:36:40.000000Z",
         "instructor": {
-            "id": 2,
-            "name": "Instruktur A",
-            "email": "a@example.com"
-        }
+            "id": 3,
+            "name": "instruktur",
+            "email": "instruktur@example.test",
+            "email_verified_at": null,
+            "created_at": "2025-05-21T06:06:24.000000Z",
+            "updated_at": "2025-05-21T06:06:24.000000Z",
+            "role": "instruktur"
+        },
+        "categories": [
+            {
+                "id": 1,
+                "name": "PHP",
+                "created_at": "2025-05-21T06:30:07.000000Z",
+                "updated_at": "2025-05-21T06:30:07.000000Z",
+                "pivot": {
+                    "course_id": 1,
+                    "category_id": 1
+                }
+            },
+            {
+                "id": 2,
+                "name": "Laravel",
+                "created_at": "2025-05-21T06:30:11.000000Z",
+                "updated_at": "2025-05-21T06:30:11.000000Z",
+                "pivot": {
+                    "course_id": 1,
+                    "category_id": 2
+                }
+            }
+        ],
+        "pdfs": [
+            {
+                "id": 1,
+                "course_id": 1,
+                "title": "Test PDF",
+                "file_path": "public/course_pdfs/1747831260-682dc9dc23901-TestPDF.pdf",
+                "order_index": 1,
+                "created_at": "2025-05-21T12:41:00.000000Z",
+                "updated_at": "2025-05-21T12:41:00.000000Z"
+            }
+        ]
     }
 }
 ```
@@ -439,7 +476,7 @@ Content-Type: application/json
 
 ## PDF
 
-### Upload PDF
+## Upload PDF
 
 -   **URL:** `/api/courses/{id}/upload`
 -   **Method:** `POST`
@@ -490,5 +527,61 @@ Status: 201 Created
             "order_index": "2"
         }
     ]
+}
+```
+
+## Download PDF
+
+-   **URL:** `/api/pdfs/{id}/download`
+-   **Method:** `GET`
+-   **Headers:**
+
+```
+Authorization: Bearer {token}
+Content-Type: application/json
+```
+
+#### Response:
+
+Status: 200 OK
+
+## Upload PDF
+
+-   **URL:** `/api/courses/{id}/update`
+-   **Method:** `PUT`
+-   **Headers:**
+
+```
+Authorization: Bearer {token}
+Content-Type: application/json
+```
+
+#### Request Body:
+
+```json
+{
+  "pdfs": [
+    {
+      "title": "Modul 1",
+      "order_index": 1,
+      "file": [PDF file]
+    }
+  ]
+}
+```
+
+#### Response:
+
+Status: 200 OK
+
+```json
+{
+    "message": "PDF berhasil diperbarui",
+    "pdf": {
+        "id": 1,
+        "title": "Judul Baru Lagi",
+        "url": "http://localhost:8000/storage/course_pdfs/1747862101-682e425595d33-newPDF.pdf",
+        "order_index": "1"
+    }
 }
 ```

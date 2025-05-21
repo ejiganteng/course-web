@@ -44,4 +44,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::put('/courses/{course}', [CourseController::class, 'update'])->middleware('instruktur');
     Route::delete('/courses/{course}', [CourseController::class, 'destroy'])->middleware('instruktur');
     Route::post('/courses/{id}/upload', [PdfController::class, 'upload'])->middleware('instruktur');
+    Route::get('/pdfs/{id}/download', [PdfController::class, 'downloadById']);
+    Route::put('/pdfs/{id}/update', [PdfController::class, 'update'])->middleware('instruktur');
+    Route::delete('/pdfs/{id}', [PdfController::class, 'destroy'])->middleware('instruktur');
 });

@@ -23,10 +23,6 @@ class CourseController extends Controller
         ]);
     }
 
-    public function showWithMaterials()
-    {
-        // 
-    }
 
     public function store(CourseRequest $request)
     {
@@ -39,25 +35,10 @@ class CourseController extends Controller
         // Sync kategori
         $course->categories()->sync($request->category_ids);
 
-        // Upload PDF kalau ada
-        if ($request->has('pdfs')) {
-            foreach ($request->pdfs as $pdfData) {
-                $file = $pdfData['file'];
-                $fileName = time() . '-' . uniqid() . '-' . $file->getClientOriginalName();
-                $path = $file->storeAs('public/course_pdfs', $fileName);
-
-                Pdf::create([
-                    'course_id' => $course->id,
-                    'title' => $pdfData['title'],
-                    'file_path' => $path,
-                    'order_index' => $pdfData['order_index'] ?? 0
-                ]);
-            }
-        }
 
         return response()->json([
             'message' => 'Kursus berhasil dibuat beserta PDF-nya',
-            'data' => $course->load(['instructor', 'categories', 'pdfs'])
+            'data' => $course->load(['instructor', 'categories'])
         ], 201);
     }
 
@@ -65,7 +46,7 @@ class CourseController extends Controller
     {
         return response()->json([
             'message' => 'Detail kursus',
-            'data' => $course->load(['instructor', 'categories'])
+            'data' => $course->load(['instructor', 'categories', 'pdfs'])
         ]);
     }
 
