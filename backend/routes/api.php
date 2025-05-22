@@ -16,12 +16,12 @@ Route::post('/logout', [AuthController::class, 'logout'])
     ->name('api.logout');
 
 // User Routes 
-Route::middleware(['auth:sanctum', 'admin'])->prefix('users')->name('api.users.')->group(function () {
-    Route::get('/', [UserController::class, 'index'])->name('index');
-    Route::post('/', [UserController::class, 'store'])->name('store');
+Route::middleware(['auth:sanctum'])->prefix('users')->name('api.users.')->group(function () {
+    Route::get('/', [UserController::class, 'index'])->middleware('admin')->name('index');
+    Route::post('/', [UserController::class, 'store'])->middleware('admin')->name('store');
     Route::get('/{id}', [UserController::class, 'show'])->name('show');
     Route::put('/{id}', [UserController::class, 'update'])->name('update');
-    Route::delete('/{id}', [UserController::class, 'destroy'])->name('destroy');
+    Route::delete('/{id}', [UserController::class, 'destroy'])->middleware('admin')->name('destroy');
 });
 
 // Category Routes 
