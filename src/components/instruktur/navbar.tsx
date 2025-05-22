@@ -4,13 +4,19 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
-import { FiHome, FiUsers, FiPieChart, FiSettings, FiLogOut } from "react-icons/fi";
+import {
+  FiHome,
+  FiUsers,
+  FiPieChart,
+  FiSettings,
+  FiLogOut,
+} from "react-icons/fi";
 import { toast } from "react-toastify";
 
 const navItems = [
   { href: "/instruktur", icon: FiHome, label: "Dashboard" },
   { href: "/instruktur/users", icon: FiUsers, label: "Users" },
-  { href: "/instruktur/analytics", icon: FiPieChart, label: "Analytics" },
+  { href: "/instruktur/course", icon: FiPieChart, label: "Course" },
   { href: "/instruktur/settings", icon: FiSettings, label: "Settings" },
 ];
 
@@ -19,7 +25,7 @@ export default function InstrukturNav() {
   const [userData, setUserData] = useState({
     id: "",
     name: "",
-    role: ""
+    role: "",
   });
   const [isLoading, setIsLoading] = useState(true);
 
@@ -28,23 +34,26 @@ export default function InstrukturNav() {
     const userId = localStorage.getItem("user_id");
     const token = localStorage.getItem("token");
     const role = localStorage.getItem("role");
-    
-    setUserData(prev => ({ ...prev, id: userId || "", role: role || "" }));
+
+    setUserData((prev) => ({ ...prev, id: userId || "", role: role || "" }));
 
     // Fetch user details to get username
     const fetchUserData = async () => {
       if (userId && token) {
         try {
-          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/${userId}`, {
-            headers: {
-              'Authorization': `Bearer ${token}`
+          const response = await fetch(
+            `${process.env.NEXT_PUBLIC_API_URL}/users/${userId}`,
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
             }
-          });
+          );
 
           if (response.ok) {
             const data = await response.json();
             if (data && data.data) {
-              setUserData(prev => ({ ...prev, name: data.data.name }));
+              setUserData((prev) => ({ ...prev, name: data.data.name }));
             }
           }
         } catch (error) {
@@ -62,12 +71,15 @@ export default function InstrukturNav() {
 
   const handleLogout = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/logout`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/logout`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
 
       if (response.ok) {
         localStorage.clear();
@@ -83,7 +95,7 @@ export default function InstrukturNav() {
     <motion.nav
       initial={{ x: -20, opacity: 0 }}
       animate={{ x: 0, opacity: 1 }}
-      className="fixed h-screen w-64 bg-gray-800 text-white flex flex-col shadow-xl rounded-r-4xl"
+      className="fixed h-screen w-64 bg-gray-950 text-white flex flex-col shadow-xl rounded-r-4xl"
     >
       <div className="p-6 border-b border-gray-700">
         <h1 className="text-xl font-bold">Instruktur Panel</h1>
@@ -92,7 +104,9 @@ export default function InstrukturNav() {
             <p className="text-sm text-gray-400">Loading user data...</p>
           ) : (
             <>
-              <p className="font-medium text-white">{userData.name || "Unknown User"}</p>
+              <p className="font-medium text-white">
+                {userData.name || "Unknown User"}
+              </p>
               <div className="flex items-center mt-1 text-sm text-gray-400">
                 <p>ID: {userData.id || "N/A"}</p>
                 {userData.role && (
