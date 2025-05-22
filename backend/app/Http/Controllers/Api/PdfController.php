@@ -3,108 +3,159 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use App\Http\Requests\PdfRequest;
-use App\Models\Pdf;
 use App\Models\Course;
+use App\Models\Pdf;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
 class PdfController extends Controller
 {
-    public function upload(PdfRequest $request, $id)
+    /**
+     * Upload PDFs to a specific course.
+     *
+     * @param PdfRequest $request
+     * @param int $id Course ID
+     * @return JsonResponse
+     */
+    public function upload(PdfRequest $request, int $id): JsonResponse
     {
+        // Ensure course exists
+        $course = Course::findOrFail($id);
+
+        // Pastikan pengguna adalah instruktur dari course terkait
+        if ($course->instruktur_id !== auth()->id()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki izin untuk upload PDF ini.',
+            ], 403);
+        }
 
         $savedPdfs = [];
 
-        foreach ($request->pdfs as $pdfData) {
+        foreach ($request->validated()['pdfs'] as $pdfData) {
             $file = $pdfData['file'];
-            $originalName = str_replace(' ', '-', $file->getClientOriginalName());
-            $fileName = time() . '-' . uniqid() . '-' . $originalName;
+            $fileName = time() . '-' . uniqid() . '-' . str_replace(' ', '-', $file->getClientOriginalName());
             $path = $file->storeAs('public/course_pdfs', $fileName);
 
             $pdf = Pdf::create([
                 'course_id' => $id,
                 'title' => $pdfData['title'],
                 'file_path' => $path,
-                'order_index' => $pdfData['order_index'] ?? 0
+                'order_index' => $pdfData['order_index'] ?? 0,
             ]);
 
             $savedPdfs[] = [
                 'id' => $pdf->id,
                 'title' => $pdf->title,
                 'url' => asset(str_replace('public/', 'storage/', $pdf->file_path)),
-                'order_index' => $pdf->order_index
+                'order_index' => $pdf->order_index,
             ];
         }
 
         return response()->json([
             'message' => 'PDF berhasil ditambahkan ke course',
-            'pdfs' => $savedPdfs
+            'pdfs' => $savedPdfs,
         ], 201);
     }
 
-    public function downloadById($id)
+    /**
+     * Download a PDF by ID.
+     *
+     * @param int $id PDF ID
+     * @return mixed
+     */
+    public function downloadById(int $id)
     {
         $pdf = Pdf::findOrFail($id);
 
-        if(!Storage::exists($pdf->file_path)){
+        if (!Storage::exists($pdf->file_path)) {
             return response()->json([
-                "message" => "File tidak ditemukan"
+                'message' => 'File tidak ditemukan',
             ], 404);
         }
 
         return Storage::download($pdf->file_path, $pdf->title . '.pdf');
     }
 
-    public function destroy($id)
+    /**
+     * Delete a PDF by ID.
+     *
+     * @param int $id PDF ID
+     * @return JsonResponse
+     */
+    public function destroy(int $id): JsonResponse
     {
         $pdf = Pdf::findOrFail($id);
 
-        // Cek apakah file nya terdapat di storage
-        if(Storage::exists($pdf->file_path)){
+        // Pastikan pengguna adalah instruktur dari course terkait
+        if ($pdf->course->instructor_id !== auth()->id()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki izin untuk menghapus PDF ini.',
+            ], 403);
+        }
+
+        if (Storage::exists($pdf->file_path)) {
             Storage::delete($pdf->file_path);
         }
 
         $pdf->delete();
 
         return response()->json([
-            "message" => "PDF Berhasil dihapus"
+            'message' => 'PDF berhasil dihapus',
         ], 200);
     }
 
-    public function update(Request $request, $id)
+    /**
+     * Perbarui PDF berdasarkan ID.
+     *
+     * @param Request $request
+     * @param int $id ID PDF
+     * @return JsonResponse
+     */
+    public function update(Request $request, int $id): JsonResponse
     {
         $pdf = Pdf::findOrFail($id);
-        
+
+        // Pastikan pengguna adalah instruktur dari course terkait
+        if ($pdf->course->instructor_id !== auth()->id()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki izin untuk memperbarui PDF ini.',
+            ], 403);
+        }
+
         $request->validate([
-            'title' => 'nullable|string|max:255',
-            'order_index' => 'nullable|integer',
-            'file' => 'nullable|file|mimes:pdf|max:10240', // max 10MB
+            'pdfs' => 'required|array|min:1',
+            'pdfs.*.title' => 'nullable|string|max:255',
+            'pdfs.*.order_index' => 'nullable|integer|min:0',
+            'pdfs.*.file' => 'nullable|file|mimes:pdf|max:10240', // 10MB
         ]);
 
-        // Update title dan order_index jika ada
-        if ($request->has('title')) {
-            $pdf->title = $request->title;
+        $pdfData = $request->pdfs[0];
+
+        // Perbarui title dan order_index jika disediakan
+        if (isset($pdfData['title'])) {
+            $pdf->title = $pdfData['title'];
         }
 
-        if ($request->has('order_index')) {
-            $pdf->order_index = $request->order_index;
+        if (isset($pdfData['order_index'])) {
+            $pdf->order_index = $pdfData['order_index'];
         }
 
-        // Jika user upload file baru
-        if ($request->hasFile('file')) {
-            // Hapus file lama
+        // Tangani unggahan file jika disediakan
+        if (isset($pdfData['file']) && $pdfData['file']->isValid()) {
+            // Hapus file lama jika ada
             if (Storage::exists($pdf->file_path)) {
                 Storage::delete($pdf->file_path);
             }
 
             // Simpan file baru
-            $file = $request->file('file');
-            $originalName = str_replace(' ', '-', $file->getClientOriginalName());
-            $fileName = time() . '-' . uniqid() . '-' . $originalName;
+            $file = $pdfData['file'];
+            $fileName = time() . '-' . uniqid() . '-' . str_replace(' ', '-', $file->getClientOriginalName());
             $path = $file->storeAs('public/course_pdfs', $fileName);
-
-            // Update path di database
             $pdf->file_path = $path;
         }
 
@@ -116,10 +167,8 @@ class PdfController extends Controller
                 'id' => $pdf->id,
                 'title' => $pdf->title,
                 'url' => asset(str_replace('public/', 'storage/', $pdf->file_path)),
-                'order_index' => $pdf->order_index
-            ]
-        ]);
+                'order_index' => $pdf->order_index,
+            ],
+        ], 200);
     }
-
-
 }

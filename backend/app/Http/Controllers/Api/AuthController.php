@@ -13,67 +13,75 @@ use Illuminate\Support\Facades\Hash;
 class AuthController extends Controller
 {
     /**
-     * Register
-     * @param App\Http\Requests\AuthRequest $request 
-     * @return JsonResponse|mixed
+     * Register a new user.
+     *
+     * @param AuthRequest $request
+     * @return JsonResponse
      */
-    public function register(AuthRequest $request)
+    public function register(AuthRequest $request): JsonResponse
     {
         $credentials = $request->validated();
 
-        // Membuat User
+        // Create new user
         $user = User::create([
             'name' => $credentials['name'],
             'email' => $credentials['email'],
-            'password' => Hash::make($credentials['password'])
+            'password' => Hash::make($credentials['password']),
+            'role' => $credentials['role'] ?? 'user', // Set default role if not provided
         ]);
 
-        // Mengembalikan response
         return response()->json([
             'message' => 'Register berhasil',
-            'data' => $user
+            'data' => $user,
         ], 201);
     }
 
     /**
-     * Login
-     * @param \App\Http\Requests\AuthRequest $request
-     * @return JsonResponse|mixed
+     * Authenticate user and generate API token.
+     *
+     * @param AuthRequest $request
+     * @return JsonResponse
      */
-    public function login(AuthRequest $request)
+    public function login(AuthRequest $request): JsonResponse
     {
         $credentials = $request->validated();
-        // Jika login gagal
-        if(!Auth::attempt($credentials)){
+
+        // Check login credentials
+        if (!Auth::attempt($credentials)) {
             return response()->json([
-                'message' => 'Email atau Password salah',
-                'data' => null
+                'message' => 'Email atau password salah',
+                'data' => null,
             ], 401);
         }
-        // Membuat token
-        $token = $request->user()
-                            ->createToken('api-token')
-                            ->plainTextToken;
+
+        // Generate API token
+        $token = $request->user()->createToken('api-token')->plainTextToken;
+
         return response()->json([
-            'message' => "Berhasil login",
-            "data" => [
-                'user_id' => auth()->user()->id,
+            'message' => 'Berhasil login',
+            'data' => [
+                'user_id' => auth()->id(),
+                'name' => auth()->user()->name,
+                'email' => auth()->user()->email,
                 'role' => auth()->user()->role,
-                'token' => $token
-            ]
-        ]);
+                'token' => $token,
+            ],
+        ], 200);
     }
 
     /**
-     * Logout
-     * @param \Illuminate\Http\Request $request
-     * @return JsonResponse|mixed
+     * Log out the authenticated user.
+     *
+     * @param Request $request
+     * @return JsonResponse
      */
-    public function logout(Request $request)
+    public function logout(Request $request): JsonResponse
     {
         $request->user()->currentAccessToken()->delete();
 
-        return response()->json(['message' => 'Logout berhasil', 'data' => null], 200);
+        return response()->json([
+            'message' => 'Logout berhasil',
+            'data' => null,
+        ], 200);
     }
-
 }

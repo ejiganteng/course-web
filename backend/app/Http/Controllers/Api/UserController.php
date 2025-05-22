@@ -5,32 +5,34 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\UserRequest;
 use App\Models\User;
-use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
 {
     /**
-     * Get All Users
-     * @return mixed|\Illuminate\Http\JsonResponse
+     * Retrieve all users.
+     *
+     * @return JsonResponse
      */
-    public function index()
+    public function index(): JsonResponse
     {
         $users = User::all();
+
         return response()->json([
-            'message' => "Data users berhasil di ambil",
-            'data' => $users
+            'message' => 'Data user berhasil diambil',
+            'data' => $users,
         ], 200);
     }
 
     /**
-     * Create new User
-     * @param \App\Http\Requests\UserRequest $request
-     * @return mixed|\Illuminate\Http\JsonResponse
+     * Create a new user.
+     *
+     * @param UserRequest $request
+     * @return JsonResponse
      */
-    public function store(UserRequest $request)
+    public function store(UserRequest $request): JsonResponse
     {
-        $user = $request->validated();
         $validated = $request->validated();
         $validated['password'] = Hash::make($validated['password']);
         $validated['role'] = $validated['role'] ?? 'user';
@@ -39,41 +41,47 @@ class UserController extends Controller
 
         return response()->json([
             'message' => 'User berhasil dibuat',
-            'data' => $user
+            'data' => $user,
         ], 201);
     }
 
     /**
-     * Show users by id
-     * @param mixed $id
-     * @return mixed|\Illuminate\Http\JsonResponse
+     * Retrieve a specific user by ID.
+     *
+     * @param int $id
+     * @return JsonResponse
      */
-    public function show($id)
+    public function show(int $id): JsonResponse
     {
         $user = User::find($id);
 
         if (!$user) {
-            return response()->json(['message' => 'User tidak ditemukan'], 404);
+            return response()->json([
+                'message' => 'User tidak ditemukan',
+            ], 404);
         }
 
         return response()->json([
             'message' => 'Detail user ditemukan',
-            'data' => $user
+            'data' => $user,
         ], 200);
     }
 
     /**
-     * Update Users
-     * @param \App\Http\Requests\UserRequest $request
-     * @param mixed $id
-     * @return mixed|\Illuminate\Http\JsonResponse
+     * Update an existing user.
+     *
+     * @param UserRequest $request
+     * @param int $id
+     * @return JsonResponse
      */
-    public function update(UserRequest $request, $id)
+    public function update(UserRequest $request, int $id): JsonResponse
     {
         $user = User::find($id);
 
         if (!$user) {
-            return response()->json(['message' => 'User tidak ditemukan'], 404);
+            return response()->json([
+                'message' => 'User tidak ditemukan',
+            ], 404);
         }
 
         $validated = $request->validated();
@@ -88,25 +96,30 @@ class UserController extends Controller
 
         return response()->json([
             'message' => 'User berhasil diperbarui',
-            'data' => $user
+            'data' => $user,
         ], 200);
     }
 
     /**
-     * Delete Users by id
-     * @param mixed $id
-     * @return mixed|\Illuminate\Http\JsonResponse
+     * Delete a user by ID.
+     *
+     * @param int $id
+     * @return JsonResponse
      */
-    public function destroy($id)
+    public function destroy(int $id): JsonResponse
     {
         $user = User::find($id);
 
         if (!$user) {
-            return response()->json(['message' => 'User tidak ditemukan'], 404);
+            return response()->json([
+                'message' => 'User tidak ditemukan',
+            ], 404);
         }
 
         $user->delete();
 
-        return response()->json(['message' => 'User berhasil dihapus'], 200);
+        return response()->json([
+            'message' => 'User berhasil dihapus',
+        ], 200);
     }
 }
