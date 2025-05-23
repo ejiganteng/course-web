@@ -5,6 +5,7 @@ namespace App\Http\Requests;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
+use Illuminate\Support\Facades\Log;
 
 class CourseRequest extends FormRequest
 {
@@ -29,7 +30,7 @@ class CourseRequest extends FormRequest
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
             'price' => 'required|numeric|min:0',
-            'thumbnail' => 'nullable|string|url',
+            'thumbnail' => 'required|image|mimes:jpg,jpeg,png|max:10240',
             'is_published' => 'boolean',
             'category_ids' => 'nullable|array',
             'category_ids.*' => 'exists:categories,id',
@@ -51,8 +52,10 @@ class CourseRequest extends FormRequest
             'price.required' => 'Harga wajib diisi.',
             'price.numeric' => 'Harga harus berupa angka.',
             'price.min' => 'Harga tidak boleh kurang dari 0.',
-            'thumbnail.string' => 'Thumbnail harus berupa teks.',
-            'thumbnail.url' => 'Thumbnail harus berupa URL yang valid.',
+            'thumbnail.required' => 'Thumbnail wajib diunggah.',
+            'thumbnail.image' => 'Thumbnail harus berupa gambar.',
+            'thumbnail.mimes' => 'Thumbnail harus berupa file dengan format jpg, jpeg, atau png.',
+            'thumbnail.max' => 'Ukuran thumbnail maksimal 10MB.',
             'is_published.boolean' => 'Status publikasi harus berupa true atau false.',
             'category_ids.array' => 'Kategori harus berupa array.',
             'category_ids.*.exists' => 'ID kategori tidak valid.',
@@ -68,6 +71,12 @@ class CourseRequest extends FormRequest
      */
     protected function failedValidation(Validator $validator): void
     {
+        Log::error('Validasi gagal', [
+            'errors' => $validator->errors()->toArray(),
+            'payload' => $this->all(),
+            'user_id' => optional($this->user())->id,
+            'url' => $this->fullUrl(),
+        ]);
         throw new HttpResponseException(response()->json([
             'success' => false,
             'message' => 'Validasi gagal.',

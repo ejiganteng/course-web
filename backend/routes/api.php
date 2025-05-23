@@ -37,14 +37,16 @@ Route::middleware(['auth:sanctum'])->prefix('categories')->name('api.categories.
 Route::middleware(['auth:sanctum'])->group(function () {
     // Course Routes
     Route::get('/courses', [CourseController::class, 'index'])->name('api.courses.index');
-    Route::post('/courses', [CourseController::class, 'store'])->middleware('admin')->name('api.courses.store');
+    Route::post('/courses', [CourseController::class, 'store'])->middleware('instruktur')->name('api.courses.store');
     Route::get('/courses/{course}', [CourseController::class, 'show'])->name('api.courses.show');
-    Route::put('/courses/{course}', [CourseController::class, 'update'])->middleware('admin')->name('api.courses.update');
-    Route::delete('/courses/{course}', [CourseController::class, 'destroy'])->middleware('admin')->name('api.courses.destroy');
+    Route::put('/courses/{course}', [CourseController::class, 'update'])->middleware('instruktur')->name('api.courses.update');
+    Route::delete('/courses/{course}', [CourseController::class, 'destroy'])->middleware('instruktur')->name('api.courses.destroy');
 
     // PDF Routes
-    Route::post('/courses/{id}/upload', [PdfController::class, 'upload'])->middleware('admin')->name('api.pdfs.upload');
+    Route::post('/courses/{id}/upload', [PdfController::class, 'upload'])->middleware('instruktur')->name('api.pdfs.upload');
     Route::get('/pdfs/{id}/download', [PdfController::class, 'downloadById'])->name('api.pdfs.download');
-    Route::put('/pdfs/{id}/update', [PdfController::class, 'update'])->middleware('admin')->name('api.pdfs.update');
-    Route::delete('/pdfs/{id}', [PdfController::class, 'destroy'])->middleware('admin')->name('api.pdfs.destroy');
+    Route::put('/pdfs/{id}/update', [PdfController::class, 'update'])->middleware('instruktur')->name('api.pdfs.update');
+    Route::delete('/pdfs/{id}', [PdfController::class, 'destroy'])->middleware('instruktur')->name('api.pdfs.destroy');
+
+    
 });

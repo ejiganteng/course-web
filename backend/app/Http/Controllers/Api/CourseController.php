@@ -38,12 +38,18 @@ class CourseController extends Controller
      */
     public function store(CourseRequest $request): JsonResponse
     {
+        // Simpan file thumbnail
+        $thumbnailPath = $request->file('thumbnail')->store('thumbnails', 'public');
+
+        // Simpan data ke database
         $course = Course::create([
             ...$request->validated(),
+            'thumbnail' => $thumbnailPath,
+            // 'is_published' => true,
             'instructor_id' => auth()->id(),
         ]);
 
-        // Sync categories if provided
+        // Sync kategori jika ada
         if ($request->has('category_ids')) {
             $course->categories()->sync($request->category_ids);
         }
@@ -53,6 +59,7 @@ class CourseController extends Controller
             'data' => $course->load(['instructor', 'categories']),
         ], 201);
     }
+
 
     /**
      * Retrieve a specific course with related data.
@@ -77,9 +84,17 @@ class CourseController extends Controller
      */
     public function update(CourseRequest $request, Course $course): JsonResponse
     {
-        $course->update($request->validated());
+        $data = $request->validated();
 
-        // Sync categories if provided
+        // Cek apakah ada file baru
+        if ($request->hasFile('thumbnail')) {
+            $thumbnailPath = $request->file('thumbnail')->store('thumbnails', 'public');
+            $data['thumbnail'] = $thumbnailPath;
+        }
+
+        $course->update($data);
+
+        // Sync kategori jika ada
         if ($request->has('category_ids')) {
             $course->categories()->sync($request->category_ids);
         }
@@ -89,6 +104,7 @@ class CourseController extends Controller
             'data' => $course->load(['instructor', 'categories']),
         ], 200);
     }
+
 
     /**
      * Delete a course.
@@ -103,13 +119,5 @@ class CourseController extends Controller
         return response()->json([
             'message' => 'Kursus berhasil dihapus',
         ], 200);
-    }
-
-
-    public function showInstructorCourses()
-    {
-        $courses = Course::with('instructor')
-                ->where('instruktur_id', auth()->id())
-                ->get();
     }
 }
