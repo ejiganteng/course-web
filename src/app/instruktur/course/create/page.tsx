@@ -1,67 +1,42 @@
 'use client';
+
 import { motion } from 'framer-motion';
+import { ArrowLeftIcon } from '@heroicons/react/24/solid';
+import Link from 'next/link';
 import CourseForm from '@/components/instruktur/course/CourseForm';
-import { toast } from 'react-toastify';
 
-export default function CreateCourse() {
-  const handleSubmit = async (courseForm: FormData, pdfs: any[]) => {
-    try {
-      const token = localStorage.getItem('token');
-      
-      // 1. Create Course
-      const courseRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/courses`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-        body: courseForm,
-      });
-
-      if (!courseRes.ok) {
-        const error = await courseRes.json();
-        throw new Error(error.message || 'Gagal membuat kursus');
-      }
-
-      const courseData = await courseRes.json();
-      const courseId = courseData.data.id;
-
-      // 2. Upload PDFs
-      if (pdfs.length > 0) {
-        const pdfFormData = new FormData();
-        
-        pdfs.forEach((pdf, index) => {
-          pdfFormData.append(`pdfs[${index}][title]`, pdf.title);
-          pdfFormData.append(`pdfs[${index}][order_index]`, pdf.order.toString());
-          pdfFormData.append(`pdfs[${index}][file]`, pdf.file);
-        });
-
-        const pdfRes = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/courses/${courseId}/upload`,
-          {
-            method: 'POST',
-            headers: { Authorization: `Bearer ${token}` },
-            body: pdfFormData,
-          }
-        );
-
-        if (!pdfRes.ok) {
-          toast.warning('Kursus berhasil dibuat, namun gagal mengupload beberapa PDF');
-        }
-      }
-
-      toast.success('Kursus berhasil dibuat!');
-      window.location.href = '/instruktur/course';
-    } catch (error: any) {
-      toast.error(error.message || 'Terjadi kesalahan');
-    }
-  };
-
+export default function CreateCoursePage() {
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="p-6 ml-64"
-    >
-      <h1 className="text-2xl font-bold mb-8">Buat Kursus Baru</h1>
-      <CourseForm onSubmit={handleSubmit} />
-    </motion.div>
+    <div className="flex h-screen bg-gray-100">
+      <div className="flex-1 ml-64 p-8">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          {/* Header */}
+          <div className="flex items-center gap-4 mb-8">
+            <Link href="/instruktur/course">
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="p-2 bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow"
+              >
+                <ArrowLeftIcon className="w-5 h-5 text-gray-600" />
+              </motion.button>
+            </Link>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-800">Buat Course Baru</h1>
+              <p className="text-gray-600">Buat course baru dan upload materi PDF</p>
+            </div>
+          </div>
+
+          {/* Form */}
+          <div className="bg-white rounded-xl shadow-lg p-8">
+            <CourseForm mode="create" />
+          </div>
+        </motion.div>
+      </div>
+    </div>
   );
 }

@@ -26,3 +26,122 @@ body {
 .font-poppins {
   font-family: 'Poppins', sans-serif;
 }
+/* Additional styles for course components */
+
+/* Line clamp utilities */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Custom scrollbar for PDF upload area */
+.pdf-upload-area::-webkit-scrollbar {
+  width: 6px;
+}
+
+.pdf-upload-area::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.pdf-upload-area::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.pdf-upload-area::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Loading animation */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Card hover effects */
+.course-card {
+  transition: all 0.3s ease;
+}
+
+.course-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+/* File upload drag styles */
+.drag-over {
+  border-color: #8b5cf6 !important;
+  background-color: #f3f4f6 !important;
+}
+
+/* Custom button animations */
+.btn-hover {
+  transition: all 0.2s ease;
+}
+
+.btn-hover:hover {
+  transform: translateY(-1px);
+}
+
+.btn-hover:active {
+  transform: translateY(0);
+}
+
+/* Status badges */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.5rem;
+  border-radius: 9999px;
+}
+
+.status-published {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+.status-draft {
+  background-color: #f3f4f6;
+  color: #374151;
+}
+
+/* Modal backdrop */
+.modal-backdrop {
+  backdrop-filter: blur(4px);
+}
+
+/* Course grid responsive */
+@media (max-width: 768px) {
+  .course-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1024px) {
+  .course-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .course-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
