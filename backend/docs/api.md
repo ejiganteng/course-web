@@ -283,6 +283,89 @@ _All endpoints require authentication. Some endpoints are restricted to instruct
 }
 ```
 
+### Get Course By Owner
+
+-   **URL:** `/api/courses/owner`
+-   **Method:** `GET`
+-   **Headers:**
+    ```
+    Authorization: Bearer {token}
+    Content-Type: application/json
+    ```
+
+#### Response (Success - 200 OK):
+
+```json
+{
+    "message": "Kursus berdasarkan ID instruktur berhasil diambil.",
+    "data": [
+        {
+            "id": 1,
+            "instructor_id": 3,
+            "title": "testing",
+            "description": "testing deskripsi",
+            "price": "1000.00",
+            "thumbnail": "Ini thumbnail",
+            "is_published": 1,
+            "created_at": "2025-05-21T09:36:40.000000Z",
+            "updated_at": "2025-05-21T09:36:40.000000Z",
+            "instructor": {
+                "id": 3,
+                "name": "instruktur",
+                "email": "instruktur@example.test",
+                "email_verified_at": null,
+                "created_at": "2025-05-21T06:06:24.000000Z",
+                "updated_at": "2025-05-21T06:06:24.000000Z",
+                "role": "instruktur"
+            },
+            "categories": [
+                {
+                    "id": 1,
+                    "name": "PHP",
+                    "created_at": "2025-05-21T06:30:07.000000Z",
+                    "updated_at": "2025-05-21T06:30:07.000000Z",
+                    "pivot": {
+                        "course_id": 1,
+                        "category_id": 1
+                    }
+                },
+                {
+                    "id": 2,
+                    "name": "Laravel",
+                    "created_at": "2025-05-21T06:30:11.000000Z",
+                    "updated_at": "2025-05-21T06:30:11.000000Z",
+                    "pivot": {
+                        "course_id": 1,
+                        "category_id": 2
+                    }
+                },
+                {
+                    "id": 3,
+                    "name": "Testing",
+                    "created_at": "2025-05-21T06:30:15.000000Z",
+                    "updated_at": "2025-05-21T06:30:15.000000Z",
+                    "pivot": {
+                        "course_id": 1,
+                        "category_id": 3
+                    }
+                }
+            ],
+            "pdfs": [
+                {
+                    "id": 1,
+                    "course_id": 1,
+                    "title": "Judul Baru Lagi",
+                    "file_path": "public/course_pdfs/1747862101-682e425595d33-Test.pdf",
+                    "order_index": 1,
+                    "created_at": "2025-05-21T12:41:00.000000Z",
+                    "updated_at": "2025-05-21T21:15:01.000000Z"
+                }
+            ]
+        }
+    ]
+}
+```
+
 ### Create Course
 
 -   **URL:** `/api/courses`

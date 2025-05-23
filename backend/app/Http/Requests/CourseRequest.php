@@ -9,24 +9,14 @@ use Illuminate\Support\Facades\Log;
 
 class CourseRequest extends FormRequest
 {
-    /**
-     * Tentukan apakah pengguna diizinkan membuat permintaan ini.
-     *
-     * @return bool
-     */
     public function authorize(): bool
     {
         return true;
     }
 
-    /**
-     * Dapatkan aturan validasi yang berlaku untuk permintaan ini.
-     *
-     * @return array
-     */
     public function rules(): array
     {
-        return [
+        $rules = [
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
             'price' => 'required|numeric|min:0',
@@ -35,13 +25,17 @@ class CourseRequest extends FormRequest
             'category_ids' => 'nullable|array',
             'category_ids.*' => 'exists:categories,id',
         ];
+
+        // Jika update (PUT/PATCH), ubah validasi jadi opsional (`sometimes`)
+        if (in_array($this->method(), ['PUT', 'PATCH'])) {
+            $rules['title'] = 'sometimes|required|string|max:255';
+            $rules['price'] = 'sometimes|required|numeric|min:0';
+            $rules['thumbnail'] = 'sometimes|image|mimes:jpg,jpeg,png|max:10240';
+        }
+
+        return $rules;
     }
 
-    /**
-     * Dapatkan pesan error kustom untuk validasi.
-     *
-     * @return array
-     */
     public function messages(): array
     {
         return [
@@ -62,13 +56,6 @@ class CourseRequest extends FormRequest
         ];
     }
 
-    /**
-     * Tangani kegagalan validasi.
-     *
-     * @param Validator $validator
-     * @return void
-     * @throws HttpResponseException
-     */
     protected function failedValidation(Validator $validator): void
     {
         Log::error('Validasi gagal', [
@@ -76,7 +63,9 @@ class CourseRequest extends FormRequest
             'payload' => $this->all(),
             'user_id' => optional($this->user())->id,
             'url' => $this->fullUrl(),
+            'method' => $this->method(),
         ]);
+
         throw new HttpResponseException(response()->json([
             'success' => false,
             'message' => 'Validasi gagal.',

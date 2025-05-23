@@ -5,6 +5,7 @@ namespace App\Http\Requests;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
+use Illuminate\Support\Facades\Log;
 
 class PdfRequest extends FormRequest
 {
@@ -65,6 +66,12 @@ class PdfRequest extends FormRequest
      */
     protected function failedValidation(Validator $validator): void
     {
+        Log::error('Validasi gagal', [
+            'errors' => $validator->errors()->toArray(),
+            'payload' => $this->all(),
+            'user_id' => optional($this->user())->id,
+            'url' => $this->fullUrl(),
+        ]);
         throw new HttpResponseException(response()->json([
             'success' => false,
             'message' => 'Validasi gagal.',

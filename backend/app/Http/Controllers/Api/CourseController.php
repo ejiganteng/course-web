@@ -31,6 +31,22 @@ class CourseController extends Controller
     }
 
     /**
+     * Get Course By Owner
+     * @return JsonResponse|mixed
+     */
+    public function getCourseByOwner()
+    {
+        $courses = Course::with(['instructor', 'categories', 'pdfs'])
+                        ->where('instructor_id', auth()->id())
+                        ->get();
+
+        return response()->json([
+            'message' => 'Kursus berdasarkan ID instruktur berhasil diambil.',
+            'data' => $courses
+        ], 200);
+    }
+
+    /**
      * Create a new course.
      *
      * @param CourseRequest $request
@@ -86,6 +102,14 @@ class CourseController extends Controller
     {
         $data = $request->validated();
 
+        // Pastikan pengguna adalah instruktur dari course terkait
+        if ($course->instructor_id !== auth()->user()->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki izin untuk update Course ini.',
+            ], 403);
+        }
+
         // Cek apakah ada file baru
         if ($request->hasFile('thumbnail')) {
             $thumbnailPath = $request->file('thumbnail')->store('thumbnails', 'public');
@@ -120,4 +144,7 @@ class CourseController extends Controller
             'message' => 'Kursus berhasil dihapus',
         ], 200);
     }
+
+    
+
 }

@@ -37,6 +37,7 @@ Route::middleware(['auth:sanctum'])->prefix('categories')->name('api.categories.
 Route::middleware(['auth:sanctum'])->group(function () {
     // Course Routes
     Route::get('/courses', [CourseController::class, 'index'])->name('api.courses.index');
+    Route::get('/courses/owner', [CourseController::class, 'getCourseByOwner'])->middleware('instruktur');
     Route::post('/courses', [CourseController::class, 'store'])->middleware('instruktur')->name('api.courses.store');
     Route::get('/courses/{course}', [CourseController::class, 'show'])->name('api.courses.show');
     Route::put('/courses/{course}', [CourseController::class, 'update'])->middleware('instruktur')->name('api.courses.update');

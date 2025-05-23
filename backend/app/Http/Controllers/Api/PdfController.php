@@ -25,7 +25,7 @@ class PdfController extends Controller
         $course = Course::findOrFail($id);
 
         // Pastikan pengguna adalah instruktur dari course terkait
-        if ($course->instruktur_id !== auth()->id()) {
+        if ($course->instructor_id !== auth()->id()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Anda tidak memiliki izin untuk upload PDF ini.',
@@ -120,10 +120,10 @@ class PdfController extends Controller
         $pdf = Pdf::findOrFail($id);
 
         // Pastikan pengguna adalah instruktur dari course terkait
-        if ($pdf->course->instructor_id !== auth()->id()) {
+        if ($pdf->course()->instructor_id !== auth()->id()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Anda tidak memiliki izin untuk memperbarui PDF ini.',
+                'message' => 'Anda tidak memiliki izin untuk memperbarui PDF ini.' . $pdf->course()->instructor_id,
             ], 403);
         }
 
