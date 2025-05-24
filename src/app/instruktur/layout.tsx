@@ -10,7 +10,7 @@ export default function InstrukturLayout({ children }: { children: ReactNode }) 
   return (
     <ProtectedRoute allowedRoles={["instruktur"]}>
       <InstrukturNav />
-      <div className="min-h-screen bg-gray-100 text-black">
+      <div className="h-full bg-gray-100 text-black">
         <ToastContainer position="top-right" autoClose={3000} />
         {children}
       </div>
