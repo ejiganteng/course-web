@@ -41,6 +41,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/courses', [CourseController::class, 'store'])->middleware('instruktur')->name('api.courses.store');
     Route::get('/courses/{course}', [CourseController::class, 'show'])->name('api.courses.show');
     Route::put('/courses/{course}', [CourseController::class, 'update'])->middleware('instruktur')->name('api.courses.update');
+    Route::post('/courses/{course}', [CourseController::class, 'update']);
     Route::delete('/courses/{course}', [CourseController::class, 'destroy'])->middleware('instruktur')->name('api.courses.destroy');
 
     // PDF Routes
@@ -48,6 +49,5 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/pdfs/{id}/download', [PdfController::class, 'downloadById'])->name('api.pdfs.download');
     Route::put('/pdfs/{id}/update', [PdfController::class, 'update'])->middleware('instruktur')->name('api.pdfs.update');
     Route::delete('/pdfs/{id}', [PdfController::class, 'destroy'])->middleware('instruktur')->name('api.pdfs.destroy');
-
     
 });

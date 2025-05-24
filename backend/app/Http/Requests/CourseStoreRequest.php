@@ -2,12 +2,12 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Support\Facades\Log;
 
-class CourseRequest extends FormRequest
+class CourseStoreRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -16,7 +16,7 @@ class CourseRequest extends FormRequest
 
     public function rules(): array
     {
-        $rules = [
+        return [
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
             'price' => 'required|numeric|min:0',
@@ -25,15 +25,6 @@ class CourseRequest extends FormRequest
             'category_ids' => 'nullable|array',
             'category_ids.*' => 'exists:categories,id',
         ];
-
-        // Jika update (PUT/PATCH), ubah validasi jadi opsional (`sometimes`)
-        if (in_array($this->method(), ['PUT', 'PATCH'])) {
-            $rules['title'] = 'sometimes|required|string|max:255';
-            $rules['price'] = 'sometimes|required|numeric|min:0';
-            $rules['thumbnail'] = 'sometimes|image|mimes:jpg,jpeg,png|max:10240';
-        }
-
-        return $rules;
     }
 
     public function messages(): array
@@ -58,7 +49,7 @@ class CourseRequest extends FormRequest
 
     protected function failedValidation(Validator $validator): void
     {
-        Log::error('Validasi gagal', [
+        Log::error('Validasi Store Gagal', [
             'errors' => $validator->errors()->toArray(),
             'payload' => $this->all(),
             'user_id' => optional($this->user())->id,

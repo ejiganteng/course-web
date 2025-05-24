@@ -470,7 +470,7 @@ _All endpoints require authentication. Some endpoints are restricted to instruct
 ### Update Course
 
 -   **URL:** `/api/courses/{id}`
--   **Method:** `PUT`
+-   **Method:** `POST`
 -   **Headers:**
     ```
     Authorization: Bearer {token}
@@ -499,7 +499,7 @@ _All endpoints require authentication. Some endpoints are restricted to instruct
         "title": "string",
         "description": "string",
         "price": "string",
-        "thumbnail": "string",
+        "thumbnail": file[images],
         "is_published": boolean,
         "created_at": "string",
         "updated_at": "string"

@@ -4,9 +4,13 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CourseRequest;
+use App\Http\Requests\CourseStoreRequest;
+use App\Http\Requests\CourseUpdateRequest;
 use App\Models\Course;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class CourseController extends Controller
 {
@@ -52,7 +56,7 @@ class CourseController extends Controller
      * @param CourseRequest $request
      * @return JsonResponse
      */
-    public function store(CourseRequest $request): JsonResponse
+    public function store(CourseStoreRequest $request): JsonResponse
     {
         // Simpan file thumbnail
         $thumbnailPath = $request->file('thumbnail')->store('thumbnails', 'public');
@@ -98,11 +102,11 @@ class CourseController extends Controller
      * @param Course $course
      * @return JsonResponse
      */
-    public function update(CourseRequest $request, Course $course): JsonResponse
+    public function update(CourseUpdateRequest $request, Course $course): JsonResponse
     {
         $data = $request->validated();
 
-        // Pastikan pengguna adalah instruktur dari course terkait
+        // // Pastikan pengguna adalah instruktur dari course terkait
         if ($course->instructor_id !== auth()->user()->id) {
             return response()->json([
                 'success' => false,
@@ -110,13 +114,24 @@ class CourseController extends Controller
             ], 403);
         }
 
-        // Cek apakah ada file baru
+        // // Hapus thumbnail lama dan simpan yang baru jika ada file baru
         if ($request->hasFile('thumbnail')) {
+            // Hapus file lama jika ada
+            if ($course->thumbnail && Storage::disk('public')->exists($course->thumbnail)) {
+                Storage::disk('public')->delete($course->thumbnail);
+            }
+
+            // Simpan thumbnail baru
             $thumbnailPath = $request->file('thumbnail')->store('thumbnails', 'public');
             $data['thumbnail'] = $thumbnailPath;
         }
 
+        // Update data
         $course->update($data);
+
+        // Log::info('All data from request', ['all' => $request->all()]);
+        // Log::info('Validated update data', ['data' => $data]);
+
 
         // Sync kategori jika ada
         if ($request->has('category_ids')) {
@@ -125,9 +140,11 @@ class CourseController extends Controller
 
         return response()->json([
             'message' => 'Kursus berhasil diperbarui',
+            'data-form' => $data,
             'data' => $course->load(['instructor', 'categories']),
         ], 200);
     }
+
 
 
     /**
