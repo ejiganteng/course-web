@@ -1,297 +1,346 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  XMarkIcon, 
-  ChevronLeftIcon, 
-  ChevronRightIcon,
-  MagnifyingGlassIcon,
-  EyeIcon,
-  ArrowDownIcon 
-} from '@heroicons/react/24/outline';
-import { Document, Page, pdfjs } from 'react-pdf';
-import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
-import 'react-pdf/dist/esm/Page/TextLayer.css';
+import { FiChevronLeft, FiChevronRight, FiZoomIn, FiZoomOut, FiRotateCw, FiDownload } from 'react-icons/fi';
+import dynamic from 'next/dynamic';
 
-// Set up PDF.js worker
-pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+// Dynamically import react-pdf components to avoid SSR issues
+const Document = dynamic(
+  () => import('react-pdf').then((mod) => mod.Document),
+  { ssr: false }
+);
+const Page = dynamic(
+  () => import('react-pdf').then((mod) => mod.Page),
+  { ssr: false }
+);
 
-interface PDFViewerProps {
-  pdf: {
-    id: number;
-    title: string;
-    file_path: string;
-    order_index: number;
-  };
-  isOpen: boolean;
-  onClose: () => void;
+// Configure PDF.js worker
+if (typeof window !== 'undefined') {
+  import('react-pdf').then(({ pdfjs }) => {
+    pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
+  });
 }
 
-export default function PDFViewer({ pdf, isOpen, onClose }: PDFViewerProps) {
-  const [numPages, setNumPages] = useState<number | null>(null);
-  const [pageNumber, setPageNumber] = useState(1);
-  const [scale, setScale] = useState(1.0);
-  const [loading, setLoading] = useState(true);
+interface PdfViewerProps {
+  pdfPath: string;
+  title?: string;
+}
+
+export default function PdfViewer({ pdfPath, title }: PdfViewerProps) {
+  const [numPages, setNumPages] = useState<number>(0);
+  const [pageNumber, setPageNumber] = useState<number>(1);
+  const [scale, setScale] = useState<number>(1.0);
+  const [rotation, setRotation] = useState<number>(0);
+  const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    if (isOpen) {
-      setPageNumber(1);
-      setScale(1.0);
-      setLoading(true);
-      setError(null);
-    }
-  }, [isOpen, pdf.id]);
+    setMounted(true);
+  }, []);
 
-  const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
+  // Convert storage path to accessible URL
+  // Backend menyimpan sebagai 'public/course_pdfs/filename.pdf'
+  // Web access harus 'storage/course_pdfs/filename.pdf'
+  const pdfUrl = (() => {
+    // Remove 'public/' prefix and replace with 'storage/'
+    const storagePath = pdfPath.replace('public/', 'storage/');
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '');
+    return `${baseUrl}/${storagePath}`;
+  })();
+
+  function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
     setNumPages(numPages);
     setLoading(false);
-  };
+    setError(null);
+    console.log('PDF loaded successfully, pages:', numPages);
+  }
 
-  const onDocumentLoadError = () => {
-    setError('Gagal memuat dokumen PDF');
+  function onDocumentLoadError(error: Error) {
     setLoading(false);
-  };
+    setError('Gagal memuat PDF. Pastikan file PDF valid dan dapat diakses.');
+    console.error('PDF load error:', error);
+    console.error('PDF URL attempted:', pdfUrl);
+  }
 
   const goToPrevPage = () => {
-    setPageNumber(page => Math.max(1, page - 1));
+    setPageNumber(prev => Math.max(1, prev - 1));
   };
 
   const goToNextPage = () => {
-    setPageNumber(page => Math.min(numPages || 1, page + 1));
+    setPageNumber(prev => Math.min(numPages, prev + 1));
   };
 
   const zoomIn = () => {
-    setScale(scale => Math.min(3, scale + 0.2));
+    setScale(prev => Math.min(3.0, prev + 0.2));
   };
 
   const zoomOut = () => {
-    setScale(scale => Math.max(0.5, scale - 0.2));
+    setScale(prev => Math.max(0.5, prev - 0.2));
   };
 
-  const handleDownload = async () => {
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/pdfs/${pdf.id}/download`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
-      });
-
-      if (response.ok) {
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${pdf.title}.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-      }
-    } catch (error) {
-      console.error('Download error:', error);
-    }
+  const rotate = () => {
+    setRotation(prev => (prev + 90) % 360);
   };
 
-  const getPDFUrl = () => {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000';
-    const cleanPath = pdf.file_path.replace('public/', '');
-    return `${baseUrl}/storage/${cleanPath}`;
+  const resetView = () => {
+    setScale(1.0);
+    setRotation(0);
+    setPageNumber(1);
   };
 
-  if (!isOpen) return null;
+  const downloadPdf = () => {
+    const link = document.createElement('a');
+    link.href = pdfUrl;
+    link.download = `${title || 'document'}.pdf`;
+    link.target = '_blank';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const openPdfInNewTab = () => {
+    window.open(pdfUrl, '_blank');
+  };
+
+  // Don't render anything on server-side
+  if (!mounted) {
+    return (
+      <div className="flex justify-center items-center h-96">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+        <span className="ml-3 text-gray-600">Memuat komponen PDF...</span>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="flex flex-col justify-center items-center h-96">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+        <span className="mt-3 text-gray-600">Memuat PDF...</span>
+        <p className="text-xs text-gray-400 mt-2">URL: {pdfUrl}</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col justify-center items-center h-96 text-center">
+        <div className="text-red-500 mb-4">
+          <svg className="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <h3 className="text-lg font-semibold text-gray-800 mb-2">Error Memuat PDF</h3>
+        <p className="text-gray-600 mb-4">{error}</p>
+        <div className="space-y-2">
+          <div className="flex gap-2 justify-center">
+            <button 
+              onClick={() => {
+                setError(null);
+                setLoading(true);
+              }} 
+              className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors"
+            >
+              Coba Lagi
+            </button>
+            <button 
+              onClick={openPdfInNewTab}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+            >
+              Buka di Tab Baru
+            </button>
+            <button 
+              onClick={downloadPdf}
+              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+            >
+              <FiDownload className="w-4 h-4" />
+              Download
+            </button>
+          </div>
+          <details className="text-left bg-gray-100 p-3 rounded mt-4">
+            <summary className="cursor-pointer text-sm text-gray-600">Debug Info</summary>
+            <div className="mt-2 text-xs space-y-1">
+              <p><strong>Original Path:</strong> {pdfPath}</p>
+              <p><strong>Generated URL:</strong> {pdfUrl}</p>
+              <p><strong>Base URL:</strong> {process.env.NEXT_PUBLIC_API_URL?.replace('/api', '')}</p>
+            </div>
+          </details>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50"
-        onClick={onClose}
-      >
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.9 }}
-          className="bg-white rounded-lg shadow-xl max-w-6xl max-h-[90vh] w-full mx-4 flex flex-col"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-gray-200">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-800">{pdf.title}</h3>
-              <p className="text-sm text-gray-500">Urutan: {pdf.order_index}</p>
-            </div>
-            
-            <div className="flex items-center gap-2">
-              {/* Download Button */}
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={handleDownload}
-                className="flex items-center gap-1 px-3 py-2 bg-green-50 hover:bg-green-100 text-green-700 rounded-lg text-sm font-medium transition-colors"
-              >
-                <ArrowDownIcon className="w-4 h-4" />
-                Download
-              </motion.button>
-              
-              {/* Close Button */}
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={onClose}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <XMarkIcon className="w-5 h-5 text-gray-600" />
-              </motion.button>
-            </div>
-          </div>
+    <div className="w-full">
+      {/* Controls */}
+      <div className="flex flex-wrap items-center justify-between bg-gray-100 p-4 rounded-lg mb-4 gap-4">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={goToPrevPage}
+            disabled={pageNumber <= 1}
+            className="p-2 bg-white border rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            title="Halaman sebelumnya"
+          >
+            <FiChevronLeft className="w-4 h-4" />
+          </button>
+          
+          <span className="text-sm text-gray-700 px-3 py-2 bg-white border rounded-lg">
+            {pageNumber} / {numPages}
+          </span>
+          
+          <button
+            onClick={goToNextPage}
+            disabled={pageNumber >= numPages}
+            className="p-2 bg-white border rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            title="Halaman selanjutnya"
+          >
+            <FiChevronRight className="w-4 h-4" />
+          </button>
+        </div>
 
-          {/* Controls */}
-          <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50">
-            <div className="flex items-center gap-2">
-              {/* Page Navigation */}
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={goToPrevPage}
-                disabled={pageNumber <= 1}
-                className={`p-2 rounded-lg transition-colors ${
-                  pageNumber <= 1 
-                    ? 'text-gray-400 cursor-not-allowed' 
-                    : 'text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                <ChevronLeftIcon className="w-5 h-5" />
-              </motion.button>
-              
-              <span className="text-sm text-gray-700 min-w-[100px] text-center">
-                {numPages ? `${pageNumber} / ${numPages}` : 'Loading...'}
-              </span>
-              
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={goToNextPage}
-                disabled={pageNumber >= (numPages || 1)}
-                className={`p-2 rounded-lg transition-colors ${
-                  pageNumber >= (numPages || 1)
-                    ? 'text-gray-400 cursor-not-allowed' 
-                    : 'text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                <ChevronRightIcon className="w-5 h-5" />
-              </motion.button>
-            </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={zoomOut}
+            className="p-2 bg-white border rounded-lg hover:bg-gray-50 transition-colors"
+            title="Zoom out"
+          >
+            <FiZoomOut className="w-4 h-4" />
+          </button>
+          
+          <span className="text-sm text-gray-700 px-3 py-2 bg-white border rounded-lg min-w-[80px] text-center">
+            {Math.round(scale * 100)}%
+          </span>
+          
+          <button
+            onClick={zoomIn}
+            className="p-2 bg-white border rounded-lg hover:bg-gray-50 transition-colors"
+            title="Zoom in"
+          >
+            <FiZoomIn className="w-4 h-4" />
+          </button>
+          
+          <button
+            onClick={rotate}
+            className="p-2 bg-white border rounded-lg hover:bg-gray-50 transition-colors"
+            title="Putar"
+          >
+            <FiRotateCw className="w-4 h-4" />
+          </button>
+          
+          <button
+            onClick={resetView}
+            className="px-3 py-2 bg-white border rounded-lg hover:bg-gray-50 text-sm transition-colors"
+            title="Reset view"
+          >
+            Reset
+          </button>
 
-            {/* Zoom Controls */}
-            <div className="flex items-center gap-2">
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={zoomOut}
-                disabled={scale <= 0.5}
-                className={`p-2 rounded-lg transition-colors ${
-                  scale <= 0.5
-                    ? 'text-gray-400 cursor-not-allowed'
-                    : 'text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                <EyeIcon className="w-5 h-5" />
-              </motion.button>
-              
-              <span className="text-sm text-gray-700 min-w-[60px] text-center">
-                {Math.round(scale * 100)}%
-              </span>
-              
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={zoomIn}
-                disabled={scale >= 3}
-                className={`p-2 rounded-lg transition-colors ${
-                  scale >= 3
-                    ? 'text-gray-400 cursor-not-allowed'
-                    : 'text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                <MagnifyingGlassIcon className="w-5 h-5" />
-              </motion.button>
-            </div>
+          <button
+            onClick={openPdfInNewTab}
+            className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition-colors"
+            title="Buka di tab baru"
+          >
+            Tab Baru
+          </button>
 
-            {/* Page Input */}
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-700">Halaman:</span>
-              <input
-                type="number"
-                min={1}
-                max={numPages || 1}
-                value={pageNumber}
-                onChange={(e) => {
-                  const page = parseInt(e.target.value);
-                  if (page >= 1 && page <= (numPages || 1)) {
-                    setPageNumber(page);
-                  }
-                }}
-                className="w-16 px-2 py-1 border border-gray-300 rounded text-sm text-center"
-              />
-            </div>
-          </div>
+          <button
+            onClick={downloadPdf}
+            className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm transition-colors flex items-center gap-1"
+            title="Download PDF"
+          >
+            <FiDownload className="w-4 h-4" />
+            Download
+          </button>
+        </div>
+      </div>
 
-          {/* PDF Content */}
-          <div className="flex-1 overflow-auto bg-gray-100 p-4">
-            <div className="flex justify-center">
-              {loading && (
-                <div className="flex items-center justify-center h-64">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500"></div>
-                </div>
-              )}
-              
-              {error && (
-                <div className="flex items-center justify-center h-64">
-                  <div className="text-center">
-                    <p className="text-red-600 mb-2">{error}</p>
-                    <button
-                      onClick={() => {
-                        setError(null);
-                        setLoading(true);
-                      }}
-                      className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
-                    >
-                      Coba Lagi
-                    </button>
-                  </div>
-                </div>
-              )}
-              
-              {!loading && !error && (
-                <Document
-                  file={getPDFUrl()}
-                  onLoadSuccess={onDocumentLoadSuccess}
-                  onLoadError={onDocumentLoadError}
-                  loading={
-                    <div className="flex items-center justify-center h-64">
-                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500"></div>
-                    </div>
-                  }
+      {/* PDF Document */}
+      <div className="border border-gray-300 rounded-lg overflow-auto bg-white pdf-container" style={{ height: '600px' }}>
+        <div className="flex justify-center p-4">
+          <Document
+            file={pdfUrl}
+            onLoadSuccess={onDocumentLoadSuccess}
+            onLoadError={onDocumentLoadError}
+            loading={
+              <div className="flex justify-center items-center h-96">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+                <span className="ml-3 text-gray-600">Memuat dokumen...</span>
+              </div>
+            }
+            error={
+              <div className="text-center py-8">
+                <p className="text-red-600 mb-2">Gagal memuat PDF</p>
+                <p className="text-sm text-gray-500">URL: {pdfUrl}</p>
+                <button 
+                  onClick={openPdfInNewTab}
+                  className="mt-2 text-blue-600 hover:text-blue-800 text-sm underline"
                 >
-                  <Page
-                    pageNumber={pageNumber}
-                    scale={scale}
-                    loading={
-                      <div className="flex items-center justify-center h-64 bg-white border border-gray-200 rounded">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
-                      </div>
-                    }
-                  />
-                </Document>
-              )}
-            </div>
+                  Coba buka di tab baru
+                </button>
+              </div>
+            }
+          >
+            <Page
+              pageNumber={pageNumber}
+              scale={scale}
+              rotate={rotation}
+              loading={
+                <div className="flex justify-center items-center h-96">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+                  <span className="ml-3 text-gray-600">Memuat halaman...</span>
+                </div>
+              }
+              error={
+                <div className="text-center py-8">
+                  <p className="text-red-600">Gagal memuat halaman</p>
+                </div>
+              }
+              renderAnnotationLayer={false}
+              renderTextLayer={false}
+            />
+          </Document>
+        </div>
+      </div>
+
+      {/* Page Navigation */}
+      {numPages > 1 && (
+        <div className="flex justify-center mt-4">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setPageNumber(1)}
+              disabled={pageNumber === 1}
+              className="px-3 py-1 text-sm bg-white border rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              Pertama
+            </button>
+            <button
+              onClick={goToPrevPage}
+              disabled={pageNumber <= 1}
+              className="px-3 py-1 text-sm bg-white border rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              Sebelumnya
+            </button>
+            <span className="px-3 py-1 text-sm text-gray-600">
+              Halaman {pageNumber} dari {numPages}
+            </span>
+            <button
+              onClick={goToNextPage}
+              disabled={pageNumber >= numPages}
+              className="px-3 py-1 text-sm bg-white border rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              Selanjutnya
+            </button>
+            <button
+              onClick={() => setPageNumber(numPages)}
+              disabled={pageNumber === numPages}
+              className="px-3 py-1 text-sm bg-white border rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              Terakhir
+            </button>
           </div>
-        </motion.div>
-      </motion.div>
-    </AnimatePresence>
+        </div>
+      )}
+    </div>
   );
 }

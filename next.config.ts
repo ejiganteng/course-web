@@ -1,8 +1,34 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  images: {
-    domains: ['localhost'],
+  // Existing configuration...
+  experimental: {
+    serverComponentsExternalPackages: ['react-pdf'],
+  },
+  
+  webpack: (config: { resolve: { alias: { canvas: boolean; encoding: boolean; }; fallback: any; }; }, { isServer }: any) => {
+    // Handle react-pdf
+    config.resolve.alias.canvas = false;
+    config.resolve.alias.encoding = false;
     
+    // Handle PDF.js worker
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        path: false,
+      };
+    }
+    
+    return config;
+  },
+  
+  // Allow external domains for images and files
+  images: {
+    domains: [
+      'localhost',
+      '127.0.0.1',
+      // Add your production domain here
+    ],
     remotePatterns: [
       {
         protocol: 'http',
@@ -10,26 +36,22 @@ const nextConfig = {
         port: '8000',
         pathname: '/storage/**',
       },
-      {
-        protocol: 'https',
-        hostname: 'localhost',
-        port: '8000', 
-        pathname: '/storage/**',
-      },
-      // Add your production domain here later
-      // {
-      //   protocol: 'https',
-      //   hostname: 'yourdomain.com',
-      //   pathname: '/storage/**',
-      // },
+      // Add production patterns here
     ],
-    
-    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
-    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
-    formats: ['image/webp'],
   },
   
-  reactStrictMode: true,
+  // Handle static file serving
+  async rewrites() {
+    return [
+      {
+        source: '/storage/:path*',
+        destination: `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '')}/storage/:path*`,
+      },
+    ];
+  },
+  
+  // Disable strict mode if having issues with react-pdf
+  reactStrictMode: false,
 };
 
 module.exports = nextConfig;

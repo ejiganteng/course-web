@@ -7,16 +7,26 @@ import { motion } from "framer-motion";
 import {
   FiHome,
   FiUsers,
-  FiPieChart,
+  FiBookOpen,
   FiSettings,
   FiLogOut,
+  FiFileText,
+  FiPlus,
 } from "react-icons/fi";
 import { toast } from "react-toastify";
 
 const navItems = [
   { href: "/instruktur", icon: FiHome, label: "Dashboard" },
   { href: "/instruktur/users", icon: FiUsers, label: "Users" },
-  { href: "/instruktur/course", icon: FiPieChart, label: "Course" },
+  { 
+    href: "/instruktur/course", 
+    icon: FiBookOpen, 
+    label: "Course",
+    subItems: [
+      { href: "/instruktur/course", icon: FiFileText, label: "Daftar Kursus" },
+      { href: "/instruktur/course/add", icon: FiPlus, label: "Tambah Kursus" },
+    ]
+  },
   { href: "/instruktur/settings", icon: FiSettings, label: "Settings" },
 ];
 
@@ -28,8 +38,16 @@ export default function InstrukturNav() {
     role: "",
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [expandedItems, setExpandedItems] = useState<string[]>([]);
 
   useEffect(() => {
+    // Auto-expand course menu if we're on a course page
+    if (pathname.startsWith('/instruktur/course')) {
+      setExpandedItems(prev => 
+        prev.includes('/instruktur/course') ? prev : [...prev, '/instruktur/course']
+      );
+    }
+
     // Get data from localStorage
     const userId = localStorage.getItem("user_id");
     const token = localStorage.getItem("token");
@@ -67,7 +85,7 @@ export default function InstrukturNav() {
     };
 
     fetchUserData();
-  }, []);
+  }, [pathname]);
 
   const handleLogout = async () => {
     try {
@@ -89,6 +107,21 @@ export default function InstrukturNav() {
     } catch (error) {
       toast.error("Gagal logout");
     }
+  };
+
+  const toggleExpanded = (href: string) => {
+    setExpandedItems(prev => 
+      prev.includes(href) 
+        ? prev.filter(item => item !== href)
+        : [...prev, href]
+    );
+  };
+
+  const isActive = (href: string) => {
+    if (href === '/instruktur') {
+      return pathname === href;
+    }
+    return pathname.startsWith(href);
   };
 
   return (
@@ -120,20 +153,76 @@ export default function InstrukturNav() {
         </div>
       </div>
 
-      <div className="flex-1 p-4 space-y-2">
+      <div className="flex-1 p-4 space-y-2 overflow-y-auto">
         {navItems.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className={`flex items-center p-3 rounded-lg transition-colors ${
-              pathname === item.href
-                ? "bg-indigo-600 text-white"
-                : "hover:bg-gray-700 text-gray-300"
-            }`}
-          >
-            <item.icon className="w-5 h-5 mr-3" />
-            {item.label}
-          </Link>
+          <div key={item.href}>
+            {item.subItems ? (
+              // Menu with submenu
+              <div>
+                <button
+                  onClick={() => toggleExpanded(item.href)}
+                  className={`w-full flex items-center justify-between p-3 rounded-lg transition-colors ${
+                    isActive(item.href)
+                      ? "bg-indigo-600 text-white"
+                      : "hover:bg-gray-700 text-gray-300"
+                  }`}
+                >
+                  <div className="flex items-center">
+                    <item.icon className="w-5 h-5 mr-3" />
+                    {item.label}
+                  </div>
+                  <motion.div
+                    animate={{ rotate: expandedItems.includes(item.href) ? 90 : 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </motion.div>
+                </button>
+                
+                <motion.div
+                  initial={false}
+                  animate={{
+                    height: expandedItems.includes(item.href) ? "auto" : 0,
+                    opacity: expandedItems.includes(item.href) ? 1 : 0
+                  }}
+                  transition={{ duration: 0.2 }}
+                  className="overflow-hidden"
+                >
+                  <div className="ml-4 mt-1 space-y-1">
+                    {item.subItems.map((subItem) => (
+                      <Link
+                        key={subItem.href}
+                        href={subItem.href}
+                        className={`flex items-center p-2 rounded-lg transition-colors text-sm ${
+                          pathname === subItem.href
+                            ? "bg-indigo-500 text-white"
+                            : "hover:bg-gray-700 text-gray-300"
+                        }`}
+                      >
+                        <subItem.icon className="w-4 h-4 mr-3" />
+                        {subItem.label}
+                      </Link>
+                    ))}
+                  </div>
+                </motion.div>
+              </div>
+            ) : (
+              // Regular menu item
+              <Link
+                href={item.href}
+                className={`flex items-center p-3 rounded-lg transition-colors ${
+                  isActive(item.href)
+                    ? "bg-indigo-600 text-white"
+                    : "hover:bg-gray-700 text-gray-300"
+                }`}
+              >
+                <item.icon className="w-5 h-5 mr-3" />
+                {item.label}
+              </Link>
+            )}
+          </div>
         ))}
       </div>
 

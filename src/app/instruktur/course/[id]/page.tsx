@@ -3,17 +3,26 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useParams, useRouter } from 'next/navigation';
-import { 
-  ArrowLeftIcon, 
-  PencilIcon, 
-  DocumentIcon,
-  EyeIcon,
-  ArrowDownCircleIcon 
-} from '@heroicons/react/24/outline';
-import { toast } from 'react-toastify';
-import { protectedFetch } from '@/utils/auth-utils';
 import Link from 'next/link';
-import PDFViewer from '@/components/instruktur/course/PDFViewer';
+import { toast } from 'react-toastify';
+import { FiArrowLeft, FiEdit, FiPlus, FiDownload, FiTrash2, FiEye, FiFile } from 'react-icons/fi';
+import dynamic from 'next/dynamic';
+
+// Dynamically import components to avoid SSR issues
+const PdfViewer = dynamic(() => import('@/components/instruktur/course/PDFViewer'), { 
+  ssr: false,
+  loading: () => (
+    <div className="flex justify-center items-center h-96">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+      <span className="ml-3 text-gray-600">Memuat PDF Viewer...</span>
+    </div>
+  )
+});
+
+const PdfManager = dynamic(() => import('@/components/instruktur/course/PDFManager'), { 
+  ssr: false,
+  loading: () => null
+});
 
 interface Course {
   id: number;
@@ -22,8 +31,6 @@ interface Course {
   price: string;
   thumbnail: string;
   is_published: boolean;
-  created_at: string;
-  updated_at: string;
   instructor: {
     id: number;
     name: string;
@@ -38,7 +45,11 @@ interface Course {
     title: string;
     file_path: string;
     order_index: number;
+    created_at: string;
+    updated_at: string;
   }>;
+  created_at: string;
+  updated_at: string;
 }
 
 export default function CourseDetailPage() {
@@ -48,38 +59,74 @@ export default function CourseDetailPage() {
   
   const [course, setCourse] = useState<Course | null>(null);
   const [loading, setLoading] = useState(true);
-  const [selectedPDF, setSelectedPDF] = useState<any>(null);
-  const [showPDFViewer, setShowPDFViewer] = useState(false);
+  const [selectedPdfId, setSelectedPdfId] = useState<number | null>(null);
+  const [showPdfManager, setShowPdfManager] = useState(false);
 
   useEffect(() => {
-    if (courseId) {
-      fetchCourseDetail();
-    }
+    fetchCourseDetail();
   }, [courseId]);
 
   const fetchCourseDetail = async () => {
     try {
-      const response = await protectedFetch(`/courses/${courseId}`);
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/courses/${courseId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
       if (response.ok) {
         const data = await response.json();
         setCourse(data.data);
+        console.log('Course data loaded:', data.data);
+        console.log('PDFs found:', data.data.pdfs?.length || 0);
       } else {
-        toast.error('Gagal mengambil detail course');
+        toast.error('Gagal memuat detail kursus');
         router.push('/instruktur/course');
       }
     } catch (error) {
-      toast.error('Terjadi kesalahan saat mengambil detail course');
+      console.error('Error fetching course:', error);
+      toast.error('Terjadi kesalahan saat memuat data');
       router.push('/instruktur/course');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDownloadPDF = async (pdfId: number, title: string) => {
+  const handleDeletePdf = async (pdfId: number) => {
+    if (!confirm('Apakah Anda yakin ingin menghapus PDF ini?')) return;
+
     try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/pdfs/${pdfId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        toast.success('PDF berhasil dihapus');
+        fetchCourseDetail();
+        if (selectedPdfId === pdfId) {
+          setSelectedPdfId(null);
+        }
+      } else {
+        const errorData = await response.json();
+        toast.error(errorData.message || 'Gagal menghapus PDF');
+      }
+    } catch (error) {
+      console.error('Error deleting PDF:', error);
+      toast.error('Terjadi kesalahan saat menghapus PDF');
+    }
+  };
+
+  const handleDownloadPdf = async (pdfId: number, title: string) => {
+    try {
+      const token = localStorage.getItem('token');
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/pdfs/${pdfId}/download`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${token}`,
         },
       });
 
@@ -87,6 +134,7 @@ export default function CourseDetailPage() {
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
+        a.style.display = 'none';
         a.href = url;
         a.download = `${title}.pdf`;
         document.body.appendChild(a);
@@ -95,24 +143,21 @@ export default function CourseDetailPage() {
         document.body.removeChild(a);
         toast.success('PDF berhasil didownload');
       } else {
-        toast.error('Gagal mendownload PDF');
+        toast.error('Gagal download PDF');
       }
     } catch (error) {
-      toast.error('Terjadi kesalahan saat mendownload PDF');
+      console.error('Error downloading PDF:', error);
+      toast.error('Terjadi kesalahan saat download PDF');
     }
-  };
-
-  const handleViewPDF = (pdf: any) => {
-    setSelectedPDF(pdf);
-    setShowPDFViewer(true);
   };
 
   if (loading) {
     return (
       <div className="flex h-screen bg-gray-100">
         <div className="flex-1 ml-64 p-8">
-          <div className="flex items-center justify-center h-full">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500"></div>
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-indigo-600"></div>
+            <span className="ml-4 text-gray-600">Memuat detail kursus...</span>
           </div>
         </div>
       </div>
@@ -124,17 +169,22 @@ export default function CourseDetailPage() {
       <div className="flex h-screen bg-gray-100">
         <div className="flex-1 ml-64 p-8">
           <div className="text-center py-12">
-            <h2 className="text-2xl font-semibold text-gray-700">Course tidak ditemukan</h2>
-            <Link href="/instruktur/course">
-              <button className="mt-4 bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg">
-                Kembali ke Daftar Course
-              </button>
+            <h2 className="text-xl font-semibold text-gray-700 mb-4">
+              Kursus tidak ditemukan
+            </h2>
+            <Link
+              href="/instruktur/course"
+              className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg"
+            >
+              Kembali ke Daftar Kursus
             </Link>
           </div>
         </div>
       </div>
     );
   }
+
+  const selectedPdf = course.pdfs.find(pdf => pdf.id === selectedPdfId);
 
   return (
     <div className="flex h-screen bg-gray-100">
@@ -143,222 +193,219 @@ export default function CourseDetailPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="max-w-6xl"
         >
           {/* Header */}
           <div className="mb-8 flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <Link href="/instruktur/course">
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="flex items-center gap-2 text-gray-600 hover:text-gray-800"
-                >
-                  <ArrowLeftIcon className="w-5 h-5" />
-                  Kembali
-                </motion.button>
+              <Link
+                href="/instruktur/course"
+                className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+              >
+                <FiArrowLeft className="w-4 h-4" />
+                Kembali
               </Link>
               <div>
-                <h1 className="text-3xl font-bold text-gray-800">{course.title}</h1>
-                <p className="text-gray-600">Detail course dan materi pembelajaran</p>
+                <h1 className="text-2xl font-bold text-gray-800">{course.title}</h1>
+                <p className="text-gray-600">Detail kursus dan manajemen PDF</p>
               </div>
             </div>
-            <Link href={`/instruktur/course/${courseId}/edit`}>
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold"
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowPdfManager(true)}
+                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
               >
-                <PencilIcon className="w-5 h-5" />
-                Edit Course
-              </motion.button>
-            </Link>
+                <FiPlus className="w-4 h-4" />
+                Tambah PDF
+              </button>
+              <Link
+                href={`/instruktur/course/${courseId}/edit`}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+              >
+                <FiEdit className="w-4 h-4" />
+                Edit Kursus
+              </Link>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Course Information */}
-            <div className="lg:col-span-2 space-y-6">
-              {/* Basic Info */}
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <h2 className="text-xl font-semibold text-gray-800 mb-4">Informasi Course</h2>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Course Info */}
+            <div className="lg:col-span-1">
+              <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+                {course.thumbnail && (
+                  <img
+                    src={`${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '')}/storage/${course.thumbnail.replace('thumbnails/', 'thumbnails/')}`}
+                    alt={course.title}
+                    className="w-full h-48 object-cover rounded-lg mb-4"
+                    onError={(e) => {
+                      console.error('Thumbnail load error for course:', course.id);
+                      console.error('Attempted URL:', (e.target as HTMLImageElement).src);
+                      console.error('Original thumbnail path:', course.thumbnail);
+                      (e.target as HTMLImageElement).style.display = 'none';
+                    }}
+                  />
+                )}
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-500 mb-1">Judul</label>
-                    <p className="text-gray-800 font-medium">{course.title}</p>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-500 mb-1">Harga</label>
-                    <p className="text-2xl font-bold text-purple-600">
-                      Rp {Number(course.price).toLocaleString('id-ID')}
-                    </p>
-                  </div>
-                  
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-500 mb-1">Deskripsi</label>
-                    <p className="text-gray-800 leading-relaxed">{course.description}</p>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-500 mb-1">Status</label>
-                    <span className={`inline-flex px-3 py-1 rounded-full text-sm font-semibold ${
-                      course.is_published 
-                        ? 'bg-green-100 text-green-800' 
+                <div className="mb-4">
+                  <span
+                    className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                      course.is_published
+                        ? 'bg-green-100 text-green-800'
                         : 'bg-yellow-100 text-yellow-800'
-                    }`}>
-                      {course.is_published ? 'Published' : 'Draft'}
-                    </span>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-500 mb-1">Jumlah Materi</label>
-                    <p className="text-gray-800 font-medium">{course.pdfs.length} PDF</p>
-                  </div>
+                    }`}
+                  >
+                    {course.is_published ? 'Published' : 'Draft'}
+                  </span>
                 </div>
 
-                {/* Categories */}
-                {course.categories.length > 0 && (
-                  <div className="mt-6">
-                    <label className="block text-sm font-medium text-gray-500 mb-2">Kategori</label>
-                    <div className="flex flex-wrap gap-2">
-                      {course.categories.map((category) => (
-                        <span
-                          key={category.id}
-                          className="px-3 py-1 bg-purple-100 text-purple-800 text-sm rounded-full font-medium"
-                        >
-                          {category.name}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                <h2 className="text-xl font-semibold text-gray-800 mb-2">{course.title}</h2>
+                <p className="text-gray-600 mb-4">{course.description || 'Tidak ada deskripsi'}</p>
+                
+                <div className="flex flex-wrap gap-1 mb-4">
+                  {course.categories.map((category) => (
+                    <span
+                      key={category.id}
+                      className="px-2 py-1 bg-indigo-100 text-indigo-800 text-xs rounded-full"
+                    >
+                      {category.name}
+                    </span>
+                  ))}
+                </div>
+
+                <div className="text-2xl font-bold text-indigo-600 mb-4">
+                  Rp {parseInt(course.price).toLocaleString('id-ID')}
+                </div>
+
+                <div className="text-sm text-gray-500">
+                  <p>Dibuat: {new Date(course.created_at).toLocaleDateString('id-ID')}</p>
+                  <p>Diupdate: {new Date(course.updated_at).toLocaleDateString('id-ID')}</p>
+                  <p>Total PDF: {course.pdfs.length}</p>
+                </div>
               </div>
 
-              {/* PDF Materials */}
+              {/* PDF List */}
               <div className="bg-white rounded-lg shadow-md p-6">
-                <h2 className="text-xl font-semibold text-gray-800 mb-4">
-                  Materi PDF ({course.pdfs.length})
-                </h2>
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">Materi PDF</h3>
                 
                 {course.pdfs.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    <DocumentIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                    <p>Belum ada materi PDF untuk course ini</p>
-                    <Link href={`/instruktur/course/${courseId}/edit`}>
-                      <button className="mt-4 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg">
-                        Tambah Materi
-                      </button>
-                    </Link>
+                  <div className="text-center py-8">
+                    <FiFile className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-500 mb-4">Belum ada materi PDF</p>
+                    <button
+                      onClick={() => setShowPdfManager(true)}
+                      className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 mx-auto transition-colors"
+                    >
+                      <FiPlus className="w-4 h-4" />
+                      Tambah PDF Pertama
+                    </button>
                   </div>
                 ) : (
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     {course.pdfs
                       .sort((a, b) => a.order_index - b.order_index)
-                      .map((pdf, index) => (
-                      <motion.div
-                        key={pdf.id}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: index * 0.1 }}
-                        className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:border-purple-300 transition-colors"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
-                            <DocumentIcon className="w-6 h-6 text-red-600" />
-                          </div>
-                          <div>
-                            <h3 className="font-medium text-gray-800">{pdf.title}</h3>
-                            <p className="text-sm text-gray-500">Urutan: {pdf.order_index}</p>
+                      .map((pdf) => (
+                        <div
+                          key={pdf.id}
+                          className={`p-3 border rounded-lg cursor-pointer transition-colors ${
+                            selectedPdfId === pdf.id
+                              ? 'border-indigo-500 bg-indigo-50'
+                              : 'border-gray-200 hover:border-gray-300'
+                          }`}
+                          onClick={() => setSelectedPdfId(pdf.id)}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <FiFile className="w-4 h-4 text-red-500" />
+                              <div>
+                                <p className="font-medium text-gray-800 text-sm">{pdf.title}</p>
+                                <p className="text-xs text-gray-500">Urutan: {pdf.order_index}</p>
+                              </div>
+                            </div>
+                            <div className="flex gap-1">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedPdfId(pdf.id);
+                                }}
+                                className="p-1 text-blue-600 hover:text-blue-800"
+                                title="Lihat"
+                              >
+                                <FiEye className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDownloadPdf(pdf.id, pdf.title);
+                                }}
+                                className="p-1 text-green-600 hover:text-green-800"
+                                title="Download"
+                              >
+                                <FiDownload className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeletePdf(pdf.id);
+                                }}
+                                className="p-1 text-red-600 hover:text-red-800"
+                                title="Hapus"
+                              >
+                                <FiTrash2 className="w-4 h-4" />
+                              </button>
+                            </div>
                           </div>
                         </div>
-                        
-                        <div className="flex items-center gap-2">
-                          <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => handleViewPDF(pdf)}
-                            className="flex items-center gap-1 px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg text-sm font-medium transition-colors"
-                          >
-                            <EyeIcon className="w-4 h-4" />
-                            Lihat
-                          </motion.button>
-                          
-                          <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => handleDownloadPDF(pdf.id, pdf.title)}
-                            className="flex items-center gap-1 px-3 py-2 bg-green-50 hover:bg-green-100 text-green-700 rounded-lg text-sm font-medium transition-colors"
-                          >
-                            <ArrowDownCircleIcon className="w-4 h-4" />
-                            Download
-                          </motion.button>
-                        </div>
-                      </motion.div>
-                    ))}
+                      ))}
                   </div>
                 )}
               </div>
             </div>
 
-            {/* Sidebar - Thumbnail and Stats */}
-            <div className="space-y-6">
-              {/* Thumbnail */}
+            {/* PDF Viewer */}
+            <div className="lg:col-span-2">
               <div className="bg-white rounded-lg shadow-md p-6">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4">Thumbnail</h3>
-                <div className="aspect-video bg-gray-200 rounded-lg overflow-hidden">
-                  {course.thumbnail ? (
-                    <img
-                      src={`${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '')}/storage/${course.thumbnail}`}
-                      alt={course.title}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <DocumentIcon className="w-16 h-16 text-gray-400" />
+                {selectedPdf ? (
+                  <div>
+                    <div className="flex justify-between items-center mb-4">
+                      <h3 className="text-lg font-semibold text-gray-800">{selectedPdf.title}</h3>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleDownloadPdf(selectedPdf.id, selectedPdf.title)}
+                          className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-lg flex items-center gap-1 text-sm transition-colors"
+                        >
+                          <FiDownload className="w-4 h-4" />
+                          Download
+                        </button>
+                      </div>
                     </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Course Stats */}
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4">Statistik</h3>
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Dibuat</span>
-                    <span className="text-gray-800 font-medium">
-                      {new Date(course.created_at).toLocaleDateString('id-ID')}
-                    </span>
+                    <PdfViewer
+                      pdfPath={selectedPdf.file_path}
+                      title={selectedPdf.title}
+                    />
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Diperbarui</span>
-                    <span className="text-gray-800 font-medium">
-                      {new Date(course.updated_at).toLocaleDateString('id-ID')}
-                    </span>
+                ) : (
+                  <div className="text-center py-12">
+                    <FiFile className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                      Pilih PDF untuk ditampilkan
+                    </h3>
+                    <p className="text-gray-500">
+                      Klik pada salah satu PDF di sebelah kiri untuk melihat isinya
+                    </p>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Total Materi</span>
-                    <span className="text-gray-800 font-medium">{course.pdfs.length} PDF</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Kategori</span>
-                    <span className="text-gray-800 font-medium">{course.categories.length}</span>
-                  </div>
-                </div>
+                )}
               </div>
             </div>
           </div>
         </motion.div>
 
-        {/* PDF Viewer Modal */}
-        {showPDFViewer && selectedPDF && (
-          <PDFViewer
-            pdf={selectedPDF}
-            isOpen={showPDFViewer}
-            onClose={() => {
-              setShowPDFViewer(false);
-              setSelectedPDF(null);
+        {/* PDF Manager Modal */}
+        {showPdfManager && (
+          <PdfManager
+            courseId={parseInt(courseId)}
+            onClose={() => setShowPdfManager(false)}
+            onSuccess={() => {
+              setShowPdfManager(false);
+              fetchCourseDetail();
             }}
           />
         )}
