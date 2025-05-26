@@ -61,6 +61,11 @@ export default function CourseDetailPage() {
   const [loading, setLoading] = useState(true);
   const [selectedPdfId, setSelectedPdfId] = useState<number | null>(null);
   const [showPdfManager, setShowPdfManager] = useState(false);
+  const [editingPdf, setEditingPdf] = useState<{
+    id: number;
+    title: string;
+    order_index: number;
+  } | null>(null);
 
   useEffect(() => {
     fetchCourseDetail();
@@ -151,6 +156,31 @@ export default function CourseDetailPage() {
     }
   };
 
+  const handleEditPdf = (pdf: any) => {
+    setEditingPdf({
+      id: pdf.id,
+      title: pdf.title,
+      order_index: pdf.order_index
+    });
+    setShowPdfManager(true);
+  };
+
+  const handleAddPdf = () => {
+    setEditingPdf(null);
+    setShowPdfManager(true);
+  };
+
+  const handleClosePdfManager = () => {
+    setShowPdfManager(false);
+    setEditingPdf(null);
+  };
+
+  const handlePdfManagerSuccess = () => {
+    setShowPdfManager(false);
+    setEditingPdf(null);
+    fetchCourseDetail();
+  };
+
   if (loading) {
     return (
       <div className="flex h-screen bg-gray-100">
@@ -211,7 +241,7 @@ export default function CourseDetailPage() {
             </div>
             <div className="flex gap-2">
               <button
-                onClick={() => setShowPdfManager(true)}
+                onClick={handleAddPdf}
                 className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
               >
                 <FiPlus className="w-4 h-4" />
@@ -291,7 +321,7 @@ export default function CourseDetailPage() {
                     <FiFile className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                     <p className="text-gray-500 mb-4">Belum ada materi PDF</p>
                     <button
-                      onClick={() => setShowPdfManager(true)}
+                      onClick={handleAddPdf}
                       className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 mx-auto transition-colors"
                     >
                       <FiPlus className="w-4 h-4" />
@@ -334,6 +364,16 @@ export default function CourseDetailPage() {
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
+                                  handleEditPdf(pdf);
+                                }}
+                                className="p-1 text-orange-600 hover:text-orange-800"
+                                title="Edit"
+                              >
+                                <FiEdit className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
                                   handleDownloadPdf(pdf.id, pdf.title);
                                 }}
                                 className="p-1 text-green-600 hover:text-green-800"
@@ -369,6 +409,13 @@ export default function CourseDetailPage() {
                       <h3 className="text-lg font-semibold text-gray-800">{selectedPdf.title}</h3>
                       <div className="flex gap-2">
                         <button
+                          onClick={() => handleEditPdf(selectedPdf)}
+                          className="bg-orange-600 hover:bg-orange-700 text-white px-3 py-1 rounded-lg flex items-center gap-1 text-sm transition-colors"
+                        >
+                          <FiEdit className="w-4 h-4" />
+                          Edit
+                        </button>
+                        <button
                           onClick={() => handleDownloadPdf(selectedPdf.id, selectedPdf.title)}
                           className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-lg flex items-center gap-1 text-sm transition-colors"
                         >
@@ -377,9 +424,13 @@ export default function CourseDetailPage() {
                         </button>
                       </div>
                     </div>
+                    
+                    {/* Updated PdfViewer usage - menggunakan pdfId */}
                     <PdfViewer
-                      pdfPath={selectedPdf.file_path}
+                      pdfId={selectedPdf.id}
                       title={selectedPdf.title}
+                      showEditButton={true}
+                      onEdit={() => handleEditPdf(selectedPdf)}
                     />
                   </div>
                 ) : (
@@ -402,11 +453,9 @@ export default function CourseDetailPage() {
         {showPdfManager && (
           <PdfManager
             courseId={parseInt(courseId)}
-            onClose={() => setShowPdfManager(false)}
-            onSuccess={() => {
-              setShowPdfManager(false);
-              fetchCourseDetail();
-            }}
+            onClose={handleClosePdfManager}
+            onSuccess={handlePdfManagerSuccess}
+            editPdf={editingPdf}
           />
         )}
       </div>

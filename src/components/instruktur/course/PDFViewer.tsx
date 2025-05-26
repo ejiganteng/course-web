@@ -1,343 +1,514 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { FiChevronLeft, FiChevronRight, FiZoomIn, FiZoomOut, FiRotateCw, FiDownload } from 'react-icons/fi';
-import dynamic from 'next/dynamic';
-
-// Dynamically import react-pdf components to avoid SSR issues
-const Document = dynamic(
-  () => import('react-pdf').then((mod) => mod.Document),
-  { ssr: false }
-);
-const Page = dynamic(
-  () => import('react-pdf').then((mod) => mod.Page),
-  { ssr: false }
-);
-
-// Configure PDF.js worker
-if (typeof window !== 'undefined') {
-  import('react-pdf').then(({ pdfjs }) => {
-    pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
-  });
-}
+import { useState, useEffect, useRef } from 'react';
+import { 
+  FiZoomIn, 
+  FiZoomOut, 
+  FiDownload,
+  FiExternalLink,
+  FiRefreshCw,
+  FiMaximize,
+  FiMinimize,
+  FiFile,
+  FiEye,
+  FiAlertCircle,
+  FiLoader,
+  FiEdit
+} from 'react-icons/fi';
+import { toast } from 'react-toastify';
 
 interface PdfViewerProps {
-  pdfPath: string;
+  pdfPath?: string;        // Untuk compatibility dengan CourseDetailPage
+  pdfId?: string | number; // Untuk direct ID usage
   title?: string;
+  className?: string;
+  onEdit?: () => void;     // Callback untuk edit PDF
+  showEditButton?: boolean; // Show edit button
 }
 
-export default function PdfViewer({ pdfPath, title }: PdfViewerProps) {
-  const [numPages, setNumPages] = useState<number>(0);
-  const [pageNumber, setPageNumber] = useState<number>(1);
-  const [scale, setScale] = useState<number>(1.0);
-  const [rotation, setRotation] = useState<number>(0);
-  const [loading, setLoading] = useState<boolean>(true);
+export default function PdfViewer({ 
+  pdfPath, 
+  pdfId, 
+  title, 
+  className = '', 
+  onEdit,
+  showEditButton = false 
+}: PdfViewerProps) {
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [scale, setScale] = useState(100);
+  const [pdfBlob, setPdfBlob] = useState<string | null>(null);
+  const [showViewer, setShowViewer] = useState(false);
+  const [downloadCount, setDownloadCount] = useState(0);
+  const [actualPdfId, setActualPdfId] = useState<string | number | null>(null);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setMounted(true);
+    
+    // Determine PDF ID from props
+    if (pdfId) {
+      setActualPdfId(pdfId);
+    } else if (pdfPath) {
+      // Extract PDF ID from path or use path as fallback
+      // Ini akan digunakan jika dipanggil dari CourseDetailPage
+      // Kita perlu mendapatkan ID PDF dari context atau props lain
+      console.warn('PdfViewer: pdfPath provided but pdfId is preferred for backend compatibility');
+      console.log('Provided pdfPath:', pdfPath);
+    }
+  }, [pdfId, pdfPath]);
+
+  // Function to get auth headers - sama seperti di PdfManager
+  const getAuthHeaders = (): HeadersInit => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      return { 'Authorization': `Bearer ${token}` };
+    }
+    return {};
+  };
+
+  // Determine endpoint based on available props
+  const getDownloadEndpoint = () => {
+    if (actualPdfId) {
+      return `${process.env.NEXT_PUBLIC_API_URL}/pdfs/${actualPdfId}/download`;
+    } else if (pdfPath) {
+      // Fallback: construct URL from storage path
+      const storagePath = pdfPath.replace('public/', 'storage/');
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '');
+      return `${baseUrl}/${storagePath}`;
+    }
+    return null;
+  };
+
+  const downloadEndpoint = getDownloadEndpoint();
+
+  // Load PDF as blob for inline viewing
+  const loadPdfBlob = async () => {
+    if (!downloadEndpoint) {
+      setError('Tidak dapat menentukan endpoint PDF');
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    
+    try {
+      console.log('Loading PDF from endpoint:', downloadEndpoint);
+      
+      const response = await fetch(downloadEndpoint, {
+        method: 'GET',
+        headers: actualPdfId ? getAuthHeaders() : {}, // Only use auth for API endpoints
+      });
+
+      if (!response.ok) {
+        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch {
+          // Response is not JSON, use status text
+        }
+        throw new Error(errorMessage);
+      }
+
+      const blob = await response.blob();
+      
+      // Validasi tipe file
+      if (!blob.type.includes('pdf') && blob.type !== 'application/octet-stream') {
+        throw new Error('File yang dimuat bukan PDF yang valid');
+      }
+
+      const blobUrl = URL.createObjectURL(blob);
+      setPdfBlob(blobUrl);
+      setError(null);
+      
+      console.log('PDF loaded successfully:', {
+        type: blob.type,
+        size: `${(blob.size / 1024 / 1024).toFixed(2)} MB`,
+        endpoint: downloadEndpoint
+      });
+      
+    } catch (err) {
+      console.error('Error loading PDF:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Gagal memuat PDF';
+      setError(errorMessage);
+      toast.error(`Gagal memuat PDF: ${errorMessage}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Direct download function
+  const handleDownload = async () => {
+    if (!downloadEndpoint) {
+      toast.error('Tidak dapat menentukan endpoint download');
+      return;
+    }
+
+    try {
+      setDownloadCount(prev => prev + 1);
+      
+      const response = await fetch(downloadEndpoint, {
+        method: 'GET',
+        headers: actualPdfId ? getAuthHeaders() : {},
+      });
+
+      if (!response.ok) {
+        let errorMessage = 'Gagal mengunduh PDF';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch {
+          errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        }
+        throw new Error(errorMessage);
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${title || `PDF-${actualPdfId || 'document'}`}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      toast.success('PDF berhasil diunduh');
+      
+    } catch (error) {
+      console.error('Download error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Gagal mengunduh PDF';
+      setError(errorMessage);
+      toast.error(errorMessage);
+    }
+  };
+
+  // Open in new tab dengan blob URL
+  const openInNewTab = async () => {
+    try {
+      if (!pdfBlob) {
+        toast.info('Memuat PDF...');
+        await loadPdfBlob();
+        return;
+      }
+      
+      window.open(pdfBlob, '_blank', 'noopener,noreferrer');
+    } catch (error) {
+      console.error('Error opening in new tab:', error);
+      toast.error('Gagal membuka PDF di tab baru');
+    }
+  };
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      containerRef.current?.requestFullscreen()
+        .then(() => setIsFullscreen(true))
+        .catch(() => toast.error('Gagal masuk fullscreen'));
+    } else {
+      document.exitFullscreen()
+        .then(() => setIsFullscreen(false))
+        .catch(() => toast.error('Gagal keluar fullscreen'));
+    }
+  };
+
+  const retryLoad = () => {
+    if (pdfBlob) {
+      URL.revokeObjectURL(pdfBlob);
+      setPdfBlob(null);
+    }
+    setError(null);
+    loadPdfBlob();
+  };
+
+  const handleShowViewer = () => {
+    setShowViewer(true);
+    if (!pdfBlob && !loading) {
+      loadPdfBlob();
+    }
+  };
+
+  const handleCloseViewer = () => {
+    setShowViewer(false);
+    if (pdfBlob) {
+      URL.revokeObjectURL(pdfBlob);
+      setPdfBlob(null);
+    }
+    setError(null);
+  };
+
+  // Cleanup blob URL on unmount
+  useEffect(() => {
+    return () => {
+      if (pdfBlob) {
+        URL.revokeObjectURL(pdfBlob);
+      }
+    };
+  }, [pdfBlob]);
+
+  // Handle fullscreen change
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
 
-  // Convert storage path to accessible URL
-  // Backend menyimpan sebagai 'public/course_pdfs/filename.pdf'
-  // Web access harus 'storage/course_pdfs/filename.pdf'
-  const pdfUrl = (() => {
-    // Remove 'public/' prefix and replace with 'storage/'
-    const storagePath = pdfPath.replace('public/', 'storage/');
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '');
-    return `${baseUrl}/${storagePath}`;
-  })();
-
-  function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
-    setNumPages(numPages);
-    setLoading(false);
-    setError(null);
-    console.log('PDF loaded successfully, pages:', numPages);
-  }
-
-  function onDocumentLoadError(error: Error) {
-    setLoading(false);
-    setError('Gagal memuat PDF. Pastikan file PDF valid dan dapat diakses.');
-    console.error('PDF load error:', error);
-    console.error('PDF URL attempted:', pdfUrl);
-  }
-
-  const goToPrevPage = () => {
-    setPageNumber(prev => Math.max(1, prev - 1));
-  };
-
-  const goToNextPage = () => {
-    setPageNumber(prev => Math.min(numPages, prev + 1));
-  };
-
-  const zoomIn = () => {
-    setScale(prev => Math.min(3.0, prev + 0.2));
-  };
-
-  const zoomOut = () => {
-    setScale(prev => Math.max(0.5, prev - 0.2));
-  };
-
-  const rotate = () => {
-    setRotation(prev => (prev + 90) % 360);
-  };
-
-  const resetView = () => {
-    setScale(1.0);
-    setRotation(0);
-    setPageNumber(1);
-  };
-
-  const downloadPdf = () => {
-    const link = document.createElement('a');
-    link.href = pdfUrl;
-    link.download = `${title || 'document'}.pdf`;
-    link.target = '_blank';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const openPdfInNewTab = () => {
-    window.open(pdfUrl, '_blank');
-  };
-
-  // Don't render anything on server-side
   if (!mounted) {
     return (
-      <div className="flex justify-center items-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
-        <span className="ml-3 text-gray-600">Memuat komponen PDF...</span>
+      <div className={`flex justify-center items-center h-32 ${className}`}>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+        <span className="ml-3 text-gray-600">Memuat PDF viewer...</span>
       </div>
     );
   }
 
-  if (loading) {
+  if (!downloadEndpoint) {
     return (
-      <div className="flex flex-col justify-center items-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
-        <span className="mt-3 text-gray-600">Memuat PDF...</span>
-        <p className="text-xs text-gray-400 mt-2">URL: {pdfUrl}</p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex flex-col justify-center items-center h-96 text-center">
-        <div className="text-red-500 mb-4">
-          <svg className="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-        </div>
-        <h3 className="text-lg font-semibold text-gray-800 mb-2">Error Memuat PDF</h3>
-        <p className="text-gray-600 mb-4">{error}</p>
-        <div className="space-y-2">
-          <div className="flex gap-2 justify-center">
-            <button 
-              onClick={() => {
-                setError(null);
-                setLoading(true);
-              }} 
-              className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors"
-            >
-              Coba Lagi
-            </button>
-            <button 
-              onClick={openPdfInNewTab}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
-            >
-              Buka di Tab Baru
-            </button>
-            <button 
-              onClick={downloadPdf}
-              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
-            >
-              <FiDownload className="w-4 h-4" />
-              Download
-            </button>
+      <div className={`w-full ${className}`}>
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+          <FiAlertCircle className="w-8 h-8 text-red-500 mx-auto mb-2" />
+          <h3 className="text-lg font-semibold text-red-800 mb-2">Konfigurasi PDF Tidak Valid</h3>
+          <p className="text-red-600">
+            Tidak ada pdfId atau pdfPath yang valid. Pastikan komponen dipanggil dengan props yang benar.
+          </p>
+          <div className="mt-4 text-sm text-red-500">
+            <p>Received props:</p>
+            <ul className="text-left mt-2">
+              <li>pdfId: {pdfId ? pdfId.toString() : 'undefined'}</li>
+              <li>pdfPath: {pdfPath || 'undefined'}</li>
+            </ul>
           </div>
-          <details className="text-left bg-gray-100 p-3 rounded mt-4">
-            <summary className="cursor-pointer text-sm text-gray-600">Debug Info</summary>
-            <div className="mt-2 text-xs space-y-1">
-              <p><strong>Original Path:</strong> {pdfPath}</p>
-              <p><strong>Generated URL:</strong> {pdfUrl}</p>
-              <p><strong>Base URL:</strong> {process.env.NEXT_PUBLIC_API_URL?.replace('/api', '')}</p>
-            </div>
-          </details>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="w-full">
-      {/* Controls */}
-      <div className="flex flex-wrap items-center justify-between bg-gray-100 p-4 rounded-lg mb-4 gap-4">
-        <div className="flex items-center gap-2">
-          <button
-            onClick={goToPrevPage}
-            disabled={pageNumber <= 1}
-            className="p-2 bg-white border rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            title="Halaman sebelumnya"
-          >
-            <FiChevronLeft className="w-4 h-4" />
-          </button>
-          
-          <span className="text-sm text-gray-700 px-3 py-2 bg-white border rounded-lg">
-            {pageNumber} / {numPages}
-          </span>
-          
-          <button
-            onClick={goToNextPage}
-            disabled={pageNumber >= numPages}
-            className="p-2 bg-white border rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            title="Halaman selanjutnya"
-          >
-            <FiChevronRight className="w-4 h-4" />
-          </button>
+    <div ref={containerRef} className={`w-full ${className}`}>
+      {/* PDF Info Card */}
+      <div className="bg-white border border-gray-200 rounded-lg p-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center">
+            <div className="flex-shrink-0">
+              <FiFile className="w-6 h-6 text-red-500" />
+            </div>
+            <div className="ml-3">
+              <h4 className="text-sm font-medium text-gray-900">
+                {title || `PDF Document ${actualPdfId || 'Unknown'}`}
+              </h4>
+              <p className="text-xs text-gray-500">
+                {actualPdfId ? `ID: ${actualPdfId}` : 'File Path Mode'} • Siap untuk dilihat atau diunduh
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center space-x-2">
+            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+              Tersedia
+            </span>
+            {downloadCount > 0 && (
+              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                {downloadCount} unduhan
+              </span>
+            )}
+          </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <button
-            onClick={zoomOut}
-            className="p-2 bg-white border rounded-lg hover:bg-gray-50 transition-colors"
-            title="Zoom out"
-          >
-            <FiZoomOut className="w-4 h-4" />
-          </button>
-          
-          <span className="text-sm text-gray-700 px-3 py-2 bg-white border rounded-lg min-w-[80px] text-center">
-            {Math.round(scale * 100)}%
-          </span>
-          
-          <button
-            onClick={zoomIn}
-            className="p-2 bg-white border rounded-lg hover:bg-gray-50 transition-colors"
-            title="Zoom in"
-          >
-            <FiZoomIn className="w-4 h-4" />
-          </button>
-          
-          <button
-            onClick={rotate}
-            className="p-2 bg-white border rounded-lg hover:bg-gray-50 transition-colors"
-            title="Putar"
-          >
-            <FiRotateCw className="w-4 h-4" />
-          </button>
-          
-          <button
-            onClick={resetView}
-            className="px-3 py-2 bg-white border rounded-lg hover:bg-gray-50 text-sm transition-colors"
-            title="Reset view"
-          >
-            Reset
-          </button>
+        {/* Action Buttons */}
+        <div className="mt-4">
+          <div className="flex flex-wrap gap-2">
+            {!showViewer ? (
+              <button
+                onClick={handleShowViewer}
+                className="inline-flex items-center px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-md transition-colors"
+              >
+                <FiEye className="w-4 h-4 mr-2" />
+                Lihat PDF
+              </button>
+            ) : (
+              <button
+                onClick={handleCloseViewer}
+                className="inline-flex items-center px-3 py-2 bg-gray-600 hover:bg-gray-700 text-white text-sm font-medium rounded-md transition-colors"
+              >
+                <FiMinimize className="w-4 h-4 mr-2" />
+                Tutup Viewer
+              </button>
+            )}
+            
+            <button
+              onClick={openInNewTab}
+              className="inline-flex items-center px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition-colors"
+            >
+              <FiExternalLink className="w-4 h-4 mr-2" />
+              Tab Baru
+            </button>
 
-          <button
-            onClick={openPdfInNewTab}
-            className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition-colors"
-            title="Buka di tab baru"
-          >
-            Tab Baru
-          </button>
+            <button
+              onClick={handleDownload}
+              className="inline-flex items-center px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-md transition-colors"
+            >
+              <FiDownload className="w-4 h-4 mr-2" />
+              Unduh
+            </button>
 
-          <button
-            onClick={downloadPdf}
-            className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm transition-colors flex items-center gap-1"
-            title="Download PDF"
-          >
-            <FiDownload className="w-4 h-4" />
-            Download
-          </button>
+            {showEditButton && onEdit && actualPdfId && (
+              <button
+                onClick={onEdit}
+                className="inline-flex items-center px-3 py-2 bg-orange-600 hover:bg-orange-700 text-white text-sm font-medium rounded-md transition-colors"
+              >
+                <FiEdit className="w-4 h-4 mr-2" />
+                Edit
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* PDF Document */}
-      <div className="border border-gray-300 rounded-lg overflow-auto bg-white pdf-container" style={{ height: '600px' }}>
-        <div className="flex justify-center p-4">
-          <Document
-            file={pdfUrl}
-            onLoadSuccess={onDocumentLoadSuccess}
-            onLoadError={onDocumentLoadError}
-            loading={
-              <div className="flex justify-center items-center h-96">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
-                <span className="ml-3 text-gray-600">Memuat dokumen...</span>
-              </div>
-            }
-            error={
-              <div className="text-center py-8">
-                <p className="text-red-600 mb-2">Gagal memuat PDF</p>
-                <p className="text-sm text-gray-500">URL: {pdfUrl}</p>
-                <button 
-                  onClick={openPdfInNewTab}
-                  className="mt-2 text-blue-600 hover:text-blue-800 text-sm underline"
+      {/* PDF Viewer Section */}
+      {showViewer && (
+        <div className="mt-4 space-y-4">
+          {/* Controls */}
+          <div className="flex flex-wrap items-center justify-between bg-gray-50 p-3 rounded-lg gap-3">
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 bg-white border rounded-md">
+                <button
+                  onClick={() => setScale(prev => Math.max(50, prev - 10))}
+                  className="p-2 hover:bg-gray-50 transition-colors"
+                  title="Perkecil"
+                  disabled={loading}
                 >
-                  Coba buka di tab baru
+                  <FiZoomOut className="w-4 h-4" />
+                </button>
+                
+                <span className="text-sm text-gray-700 px-3 py-2 min-w-[60px] text-center">
+                  {scale}%
+                </span>
+                
+                <button
+                  onClick={() => setScale(prev => Math.min(200, prev + 10))}
+                  className="p-2 hover:bg-gray-50 transition-colors"
+                  title="Perbesar"
+                  disabled={loading}
+                >
+                  <FiZoomIn className="w-4 h-4" />
                 </button>
               </div>
-            }
-          >
-            <Page
-              pageNumber={pageNumber}
-              scale={scale}
-              rotate={rotation}
-              loading={
-                <div className="flex justify-center items-center h-96">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
-                  <span className="ml-3 text-gray-600">Memuat halaman...</span>
-                </div>
-              }
-              error={
-                <div className="text-center py-8">
-                  <p className="text-red-600">Gagal memuat halaman</p>
-                </div>
-              }
-              renderAnnotationLayer={false}
-              renderTextLayer={false}
-            />
-          </Document>
-        </div>
-      </div>
 
-      {/* Page Navigation */}
-      {numPages > 1 && (
-        <div className="flex justify-center mt-4">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setPageNumber(1)}
-              disabled={pageNumber === 1}
-              className="px-3 py-1 text-sm bg-white border rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              Pertama
-            </button>
-            <button
-              onClick={goToPrevPage}
-              disabled={pageNumber <= 1}
-              className="px-3 py-1 text-sm bg-white border rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              Sebelumnya
-            </button>
-            <span className="px-3 py-1 text-sm text-gray-600">
-              Halaman {pageNumber} dari {numPages}
-            </span>
-            <button
-              onClick={goToNextPage}
-              disabled={pageNumber >= numPages}
-              className="px-3 py-1 text-sm bg-white border rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              Selanjutnya
-            </button>
-            <button
-              onClick={() => setPageNumber(numPages)}
-              disabled={pageNumber === numPages}
-              className="px-3 py-1 text-sm bg-white border rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              Terakhir
-            </button>
+              <button
+                onClick={() => setScale(100)}
+                className="px-3 py-2 bg-white border rounded-md hover:bg-gray-50 text-sm transition-colors"
+                title="Reset zoom"
+                disabled={loading}
+              >
+                Reset
+              </button>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={retryLoad}
+                className="p-2 bg-white border rounded-md hover:bg-gray-50 transition-colors"
+                title="Muat ulang PDF"
+                disabled={loading}
+              >
+                <FiRefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              </button>
+
+              <button
+                onClick={toggleFullscreen}
+                className="p-2 bg-white border rounded-md hover:bg-gray-50 transition-colors"
+                title={isFullscreen ? "Keluar fullscreen" : "Masuk fullscreen"}
+              >
+                {isFullscreen ? <FiMinimize className="w-4 h-4" /> : <FiMaximize className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
+
+          {/* PDF Content */}
+          <div className="border border-gray-300 rounded-lg overflow-hidden bg-white">
+            {loading && (
+              <div className="flex flex-col justify-center items-center h-96">
+                <FiLoader className="w-8 h-8 text-indigo-600 animate-spin mb-3" />
+                <span className="text-gray-600">Memuat PDF...</span>
+                <p className="text-sm text-gray-500 mt-2">
+                  {actualPdfId ? 'Mengunduh dari API...' : 'Memuat dari storage...'}
+                </p>
+              </div>
+            )}
+
+            {error && (
+              <div className="flex flex-col justify-center items-center h-96 text-center p-6">
+                <FiAlertCircle className="w-12 h-12 text-red-500 mb-4" />
+                <h3 className="text-lg font-semibold text-gray-800 mb-2">Gagal Memuat PDF</h3>
+                <p className="text-gray-600 mb-4 max-w-lg">
+                  {error}
+                </p>
+                
+                <div className="flex gap-2 justify-center flex-wrap">
+                  <button 
+                    onClick={retryLoad}
+                    className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md transition-colors flex items-center gap-2"
+                  >
+                    <FiRefreshCw className="w-4 h-4" />
+                    Coba Lagi
+                  </button>
+                  <button 
+                    onClick={handleDownload}
+                    className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md transition-colors flex items-center gap-2"
+                  >
+                    <FiDownload className="w-4 h-4" />
+                    Unduh Saja
+                  </button>
+                </div>
+                
+                <details className="mt-4 text-left bg-gray-100 p-3 rounded max-w-md">
+                  <summary className="cursor-pointer text-sm text-gray-600 font-medium">
+                    Detail Error
+                  </summary>
+                  <div className="mt-2 text-xs space-y-1">
+                    <p><strong>PDF ID:</strong> {actualPdfId || 'N/A'}</p>
+                    <p><strong>PDF Path:</strong> {pdfPath || 'N/A'}</p>
+                    <p><strong>Endpoint:</strong> {downloadEndpoint}</p>
+                    <p><strong>Error:</strong> {error}</p>
+                  </div>
+                </details>
+              </div>
+            )}
+
+            {!loading && !error && pdfBlob && (
+              <div className="relative" style={{ height: '600px' }}>
+                <iframe
+                  ref={iframeRef}
+                  src={pdfBlob}
+                  className="w-full h-full"
+                  title={title || 'PDF Document'}
+                  style={{ 
+                    transform: `scale(${scale / 100})`, 
+                    transformOrigin: 'top left',
+                    width: `${100 / scale * 100}%`,
+                    height: `${100 / scale * 100}%`
+                  }}
+                  onLoad={() => console.log('PDF iframe loaded successfully')}
+                  onError={() => {
+                    console.error('PDF iframe failed to load');
+                    setError('PDF tidak dapat ditampilkan dalam iframe');
+                  }}
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Info Footer */}
+          <div className="text-xs text-gray-500 text-center p-2 bg-gray-50 rounded">
+            <p>
+              <strong>Mode:</strong> {actualPdfId ? `API Endpoint (/api/pdfs/${actualPdfId}/download)` : `Storage Path (${pdfPath})`} • 
+              {actualPdfId ? 'Menggunakan autentikasi Bearer token' : 'Akses langsung ke storage'}
+            </p>
           </div>
         </div>
       )}

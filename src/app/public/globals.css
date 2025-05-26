@@ -26,9 +26,7 @@ body {
 .font-poppins {
   font-family: 'Poppins', sans-serif;
 }
-/* Additional styles for course components */
 
-/* Line clamp utilities */
 .line-clamp-2 {
   display: -webkit-box;
   -webkit-line-clamp: 2;

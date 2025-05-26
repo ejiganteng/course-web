@@ -1,34 +1,28 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Existing configuration...
+  // Remove react-pdf specific configurations
   experimental: {
-    serverComponentsExternalPackages: ['react-pdf'],
+    // Remove serverComponentsExternalPackages for react-pdf
   },
   
-  webpack: (config: { resolve: { alias: { canvas: boolean; encoding: boolean; }; fallback: any; }; }, { isServer }: any) => {
-    // Handle react-pdf
-    config.resolve.alias.canvas = false;
-    config.resolve.alias.encoding = false;
+  webpack: (config: { resolve: { fallback: any; }; }, { isServer }: any) => {
+    // Remove react-pdf specific webpack configs
+    // Only keep basic configurations
     
-    // Handle PDF.js worker
     if (!isServer) {
       config.resolve.fallback = {
         ...config.resolve.fallback,
         fs: false,
         path: false,
+        crypto: false,
       };
     }
     
     return config;
   },
   
-  // Allow external domains for images and files
   images: {
-    domains: [
-      'localhost',
-      '127.0.0.1',
-      // Add your production domain here
-    ],
+    domains: ['localhost', '127.0.0.1'],
     remotePatterns: [
       {
         protocol: 'http',
@@ -36,22 +30,17 @@ const nextConfig = {
         port: '8000',
         pathname: '/storage/**',
       },
-      // Add production patterns here
     ],
   },
   
-  // Handle static file serving
-  async rewrites() {
-    return [
-      {
-        source: '/storage/:path*',
-        destination: `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '')}/storage/:path*`,
-      },
-    ];
-  },
+  // Enable static optimization
+  trailingSlash: false,
   
-  // Disable strict mode if having issues with react-pdf
-  reactStrictMode: false,
+  // Better for production
+  poweredByHeader: false,
+  
+  // React strict mode enabled for Next.js 15
+  reactStrictMode: true,
 };
 
 module.exports = nextConfig;

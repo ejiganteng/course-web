@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify';
-import { FiX, FiUpload, FiFile, FiPlus, FiTrash2, FiSave } from 'react-icons/fi';
+import { FiX, FiUpload, FiFile, FiPlus, FiTrash2, FiSave, FiAlertCircle } from 'react-icons/fi';
 
 interface PdfFile {
   id: string;
@@ -20,11 +20,12 @@ interface PdfManagerProps {
     id: number;
     title: string;
     order_index: number;
-  };
+  } | null;
 }
 
 export default function PdfManager({ courseId, onClose, onSuccess, editPdf }: PdfManagerProps) {
   const [loading, setLoading] = useState(false);
+  const [debugInfo, setDebugInfo] = useState<string[]>([]);
   const [pdfFiles, setPdfFiles] = useState<PdfFile[]>(
     editPdf ? [
       {
@@ -42,6 +43,11 @@ export default function PdfManager({ courseId, onClose, onSuccess, editPdf }: Pd
       }
     ]
   );
+
+  const addDebugInfo = (info: string) => {
+    setDebugInfo(prev => [...prev, `${new Date().toLocaleTimeString()}: ${info}`]);
+    console.log('DEBUG:', info);
+  };
 
   const addPdfFile = () => {
     const newPdf: PdfFile = {
@@ -68,26 +74,42 @@ export default function PdfManager({ courseId, onClose, onSuccess, editPdf }: Pd
   };
 
   const handleFileChange = (id: string, file: File) => {
+    addDebugInfo(`File selected: ${file.name}, Size: ${(file.size / 1024 / 1024).toFixed(2)}MB, Type: ${file.type}`);
+    
     // Validate file type - hanya PDF
     if (file.type !== 'application/pdf') {
       toast.error('File harus berupa PDF');
+      addDebugInfo(`File rejected: Invalid type ${file.type}`);
       return;
     }
     
     // Validate file size (10MB = 10240KB)
-    if (file.size > 10240 * 1024) {
+    const maxSizeBytes = 10 * 1024 * 1024; // 10MB in bytes
+    if (file.size > maxSizeBytes) {
       toast.error('File PDF tidak boleh lebih dari 10MB');
+      addDebugInfo(`File rejected: Size ${(file.size / 1024 / 1024).toFixed(2)}MB exceeds 10MB limit`);
       return;
     }
 
+    // Additional validation for file content
+    if (file.size === 0) {
+      toast.error('File tidak boleh kosong');
+      addDebugInfo('File rejected: Empty file');
+      return;
+    }
+
+    addDebugInfo(`File accepted: ${file.name}`);
     updatePdfFile(id, 'file', file);
   };
 
   const validateFiles = () => {
+    addDebugInfo('Starting validation...');
+    
     // Check if all files have titles (sesuai PdfRequest: required)
     const hasEmptyTitles = pdfFiles.some(pdf => !pdf.title.trim());
     if (hasEmptyTitles) {
       toast.error('Judul PDF wajib diisi');
+      addDebugInfo('Validation failed: Empty titles found');
       return false;
     }
 
@@ -96,11 +118,20 @@ export default function PdfManager({ courseId, onClose, onSuccess, editPdf }: Pd
       const hasEmptyFiles = pdfFiles.some(pdf => !pdf.file);
       if (hasEmptyFiles) {
         toast.error('File PDF wajib diunggah');
+        addDebugInfo('Validation failed: Missing files for upload');
         return false;
       }
     }
 
-    // For edit mode, file is optional (nullable in update validation)
+    // Validate order_index is valid number
+    const hasInvalidOrder = pdfFiles.some(pdf => isNaN(pdf.order_index) || pdf.order_index < 0);
+    if (hasInvalidOrder) {
+      toast.error('Urutan PDF harus berupa angka valid');
+      addDebugInfo('Validation failed: Invalid order_index');
+      return false;
+    }
+
+    addDebugInfo('Validation passed');
     return true;
   };
 
@@ -108,11 +139,17 @@ export default function PdfManager({ courseId, onClose, onSuccess, editPdf }: Pd
     if (!validateFiles()) return;
 
     setLoading(true);
+    setDebugInfo([]); // Clear previous debug info
+    addDebugInfo('Starting submit process...');
 
     try {
       const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
 
       if (editPdf) {
+        addDebugInfo('Edit mode: Updating existing PDF');
         // Update existing PDF - sesuai backend update endpoint
         const pdf = pdfFiles[0];
         const formData = new FormData();
@@ -122,34 +159,51 @@ export default function PdfManager({ courseId, onClose, onSuccess, editPdf }: Pd
         formData.append('pdfs[0][order_index]', pdf.order_index.toString());
         
         if (pdf.file) {
+          addDebugInfo(`Adding file to FormData: ${pdf.file.name} (${pdf.file.size} bytes)`);
           formData.append('pdfs[0][file]', pdf.file);
+        } else {
+          addDebugInfo('No new file provided for edit - keeping existing file');
         }
 
-        console.log('Updating PDF with data:');
+        // Debug FormData contents
+        addDebugInfo('FormData contents for update:');
         for (let [key, value] of formData.entries()) {
-          console.log(key, value instanceof File ? `${value.name} (${value.size} bytes)` : value);
+          if (value instanceof File) {
+            addDebugInfo(`  ${key}: File(${value.name}, ${value.size} bytes, ${value.type})`);
+          } else {
+            addDebugInfo(`  ${key}: ${value}`);
+          }
         }
 
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/pdfs/${editPdf.id}/update`, {
+        const updateUrl = `${process.env.NEXT_PUBLIC_API_URL}/pdfs/${editPdf.id}/update`;
+        addDebugInfo(`Sending PUT request to: ${updateUrl}`);
+
+        const response = await fetch(updateUrl, {
           method: 'PUT',
           headers: {
             'Authorization': `Bearer ${token}`,
-            // FormData akan set Content-Type otomatis
+            // Don't set Content-Type for FormData - browser will set it automatically with boundary
           },
           body: formData,
         });
 
+        addDebugInfo(`Response status: ${response.status} ${response.statusText}`);
+
         if (response.ok) {
+          const responseData = await response.json();
+          addDebugInfo(`Success response: ${JSON.stringify(responseData)}`);
           toast.success('PDF berhasil diperbarui');
           onSuccess();
         } else {
           const errorData = await response.json();
+          addDebugInfo(`Error response: ${JSON.stringify(errorData)}`);
           console.error('PDF update error:', errorData);
           
           if (errorData.errors) {
             Object.keys(errorData.errors).forEach(key => {
               errorData.errors[key].forEach((error: string) => {
                 toast.error(`${key}: ${error}`);
+                addDebugInfo(`Validation error - ${key}: ${error}`);
               });
             });
           } else {
@@ -157,41 +211,64 @@ export default function PdfManager({ courseId, onClose, onSuccess, editPdf }: Pd
           }
         }
       } else {
+        addDebugInfo('Upload mode: Creating new PDFs');
         // Upload new PDFs - sesuai PdfRequest format
         const formData = new FormData();
         
+        let validPdfCount = 0;
         pdfFiles.forEach((pdf, index) => {
           if (pdf.file && pdf.title.trim()) {
-            formData.append(`pdfs[${index}][title]`, pdf.title.trim());
-            formData.append(`pdfs[${index}][file]`, pdf.file);
-            formData.append(`pdfs[${index}][order_index]`, pdf.order_index.toString());
+            addDebugInfo(`Adding PDF ${index + 1}: ${pdf.title} (${pdf.file.name})`);
+            formData.append(`pdfs[${validPdfCount}][title]`, pdf.title.trim());
+            formData.append(`pdfs[${validPdfCount}][file]`, pdf.file);
+            formData.append(`pdfs[${validPdfCount}][order_index]`, pdf.order_index.toString());
+            validPdfCount++;
           }
         });
 
-        console.log('Uploading PDFs with data:');
-        for (let [key, value] of formData.entries()) {
-          console.log(key, value instanceof File ? `${value.name} (${value.size} bytes)` : value);
+        if (validPdfCount === 0) {
+          throw new Error('No valid PDFs to upload');
         }
 
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/courses/${courseId}/upload`, {
+        // Debug FormData contents
+        addDebugInfo(`FormData contents for upload (${validPdfCount} PDFs):`);
+        for (let [key, value] of formData.entries()) {
+          if (value instanceof File) {
+            addDebugInfo(`  ${key}: File(${value.name}, ${value.size} bytes, ${value.type})`);
+          } else {
+            addDebugInfo(`  ${key}: ${value}`);
+          }
+        }
+
+        const uploadUrl = `${process.env.NEXT_PUBLIC_API_URL}/courses/${courseId}/upload`;
+        addDebugInfo(`Sending POST request to: ${uploadUrl}`);
+
+        const response = await fetch(uploadUrl, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
+            // Don't set Content-Type for FormData
           },
           body: formData,
         });
 
+        addDebugInfo(`Response status: ${response.status} ${response.statusText}`);
+
         if (response.ok) {
+          const responseData = await response.json();
+          addDebugInfo(`Success response: ${JSON.stringify(responseData)}`);
           toast.success('PDF berhasil ditambahkan');
           onSuccess();
         } else {
           const errorData = await response.json();
+          addDebugInfo(`Error response: ${JSON.stringify(errorData)}`);
           console.error('PDF upload error:', errorData);
           
           if (errorData.errors) {
             Object.keys(errorData.errors).forEach(key => {
               errorData.errors[key].forEach((error: string) => {
                 toast.error(`${key}: ${error}`);
+                addDebugInfo(`Validation error - ${key}: ${error}`);
               });
             });
           } else {
@@ -201,9 +278,11 @@ export default function PdfManager({ courseId, onClose, onSuccess, editPdf }: Pd
       }
     } catch (error: any) {
       console.error('Submit error:', error);
+      addDebugInfo(`Submit error: ${error.message || error}`);
       toast.error(error.message || 'Terjadi kesalahan');
     } finally {
       setLoading(false);
+      addDebugInfo('Submit process completed');
     }
   };
 
@@ -214,7 +293,7 @@ export default function PdfManager({ courseId, onClose, onSuccess, editPdf }: Pd
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.9 }}
-          className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden"
+          className="bg-white rounded-lg shadow-xl w-full max-w-5xl max-h-[90vh] overflow-hidden"
         >
           {/* Header */}
           <div className="flex justify-between items-center p-6 border-b">
@@ -230,134 +309,161 @@ export default function PdfManager({ courseId, onClose, onSuccess, editPdf }: Pd
           </div>
 
           {/* Content */}
-          <div className="p-6 overflow-y-auto max-h-[70vh]">
-            <div className="space-y-6">
-              {!editPdf && (
-                <div className="flex justify-between items-center">
-                  <p className="text-gray-600">
-                    Upload satu atau lebih file PDF untuk ditambahkan ke kursus
-                  </p>
-                  <button
-                    onClick={addPdfFile}
-                    className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 text-sm transition-colors"
-                  >
-                    <FiPlus className="w-4 h-4" />
-                    Tambah PDF
-                  </button>
-                </div>
-              )}
+          <div className="flex">
+            {/* Main Content */}
+            <div className="flex-1 p-6 overflow-y-auto max-h-[70vh]">
+              <div className="space-y-6">
+                {!editPdf && (
+                  <div className="flex justify-between items-center">
+                    <p className="text-gray-600">
+                      Upload satu atau lebih file PDF untuk ditambahkan ke kursus
+                    </p>
+                    <button
+                      onClick={addPdfFile}
+                      className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 text-sm transition-colors"
+                    >
+                      <FiPlus className="w-4 h-4" />
+                      Tambah PDF
+                    </button>
+                  </div>
+                )}
 
-              <div className="space-y-4">
-                {pdfFiles.map((pdf, index) => (
-                  <motion.div
-                    key={pdf.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    className="border border-gray-200 rounded-lg p-6"
-                  >
-                    <div className="flex justify-between items-start mb-4">
-                      <h4 className="text-lg font-medium text-gray-700">
-                        {editPdf ? 'Edit PDF' : `PDF ${index + 1}`}
-                      </h4>
-                      {!editPdf && pdfFiles.length > 1 && (
-                        <button
-                          onClick={() => removePdfFile(pdf.id)}
-                          className="text-red-600 hover:text-red-800 p-1"
-                        >
-                          <FiTrash2 className="w-4 h-4" />
-                        </button>
-                      )}
-                    </div>
+                <div className="space-y-4">
+                  {pdfFiles.map((pdf, index) => (
+                    <motion.div
+                      key={pdf.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -20 }}
+                      className="border border-gray-200 rounded-lg p-6"
+                    >
+                      <div className="flex justify-between items-start mb-4">
+                        <h4 className="text-lg font-medium text-gray-700">
+                          {editPdf ? 'Edit PDF' : `PDF ${index + 1}`}
+                        </h4>
+                        {!editPdf && pdfFiles.length > 1 && (
+                          <button
+                            onClick={() => removePdfFile(pdf.id)}
+                            className="text-red-600 hover:text-red-800 p-1"
+                          >
+                            <FiTrash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                      <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Judul PDF *
-                        </label>
-                        <input
-                          type="text"
-                          value={pdf.title}
-                          onChange={(e) => updatePdfFile(pdf.id, 'title', e.target.value)}
-                          maxLength={255}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                          placeholder="Masukkan judul PDF"
-                          required
-                        />
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                        <div className="md:col-span-2">
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Judul PDF *
+                          </label>
+                          <input
+                            type="text"
+                            value={pdf.title}
+                            onChange={(e) => updatePdfFile(pdf.id, 'title', e.target.value)}
+                            maxLength={255}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            placeholder="Masukkan judul PDF"
+                            required
+                          />
+                          <p className="text-xs text-gray-500 mt-1">
+                            Karakter: {pdf.title.length}/255
+                          </p>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Urutan
+                          </label>
+                          <input
+                            type="number"
+                            value={pdf.order_index}
+                            onChange={(e) => updatePdfFile(pdf.id, 'order_index', parseInt(e.target.value) || 0)}
+                            min="0"
+                            max="9999"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                          />
+                        </div>
                       </div>
 
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Urutan
+                          File PDF {!editPdf && '*'}
                         </label>
-                        <input
-                          type="number"
-                          value={pdf.order_index}
-                          onChange={(e) => updatePdfFile(pdf.id, 'order_index', parseInt(e.target.value) || 0)}
-                          min="0"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        File PDF {!editPdf && '*'}
-                      </label>
-                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-6">
-                        {pdf.file ? (
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <FiFile className="w-8 h-8 text-red-500" />
-                              <div>
-                                <p className="font-medium text-gray-800">{pdf.file.name}</p>
-                                <p className="text-sm text-gray-500">
-                                  {(pdf.file.size / 1024 / 1024).toFixed(2)} MB
-                                </p>
+                        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6">
+                          {pdf.file ? (
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <FiFile className="w-8 h-8 text-red-500" />
+                                <div>
+                                  <p className="font-medium text-gray-800">{pdf.file.name}</p>
+                                  <p className="text-sm text-gray-500">
+                                    {(pdf.file.size / 1024 / 1024).toFixed(2)} MB • {pdf.file.type}
+                                  </p>
+                                  <p className="text-xs text-gray-400">
+                                    Last modified: {new Date(pdf.file.lastModified).toLocaleString('id-ID')}
+                                  </p>
+                                </div>
                               </div>
+                              <button
+                                onClick={() => updatePdfFile(pdf.id, 'file', null)}
+                                className="text-red-600 hover:text-red-800 p-2"
+                              >
+                                <FiTrash2 className="w-4 h-4" />
+                              </button>
                             </div>
-                            <button
-                              onClick={() => updatePdfFile(pdf.id, 'file', null)}
-                              className="text-red-600 hover:text-red-800 p-2"
-                            >
-                              <FiTrash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        ) : (
-                          <label className="cursor-pointer block">
-                            <div className="text-center">
-                              <FiUpload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                              <span className="block text-sm font-medium text-gray-900 mb-2">
-                                {editPdf ? 'Upload file baru (opsional)' : 'Upload file PDF'}
-                              </span>
-                              <span className="block text-sm text-gray-500">
-                                PDF up to 10MB
-                              </span>
-                            </div>
-                            <input
-                              type="file"
-                              accept=".pdf"
-                              onChange={(e) => {
-                                const file = e.target.files?.[0];
-                                if (file) {
-                                  handleFileChange(pdf.id, file);
-                                }
-                              }}
-                              className="hidden"
-                            />
-                          </label>
+                          ) : (
+                            <label className="cursor-pointer block">
+                              <div className="text-center">
+                                <FiUpload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                                <span className="block text-sm font-medium text-gray-900 mb-2">
+                                  {editPdf ? 'Upload file baru (opsional)' : 'Upload file PDF'}
+                                </span>
+                                <span className="block text-sm text-gray-500">
+                                  PDF up to 10MB • Format: .pdf
+                                </span>
+                              </div>
+                              <input
+                                type="file"
+                                accept=".pdf,application/pdf"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) {
+                                    handleFileChange(pdf.id, file);
+                                  }
+                                }}
+                                className="hidden"
+                              />
+                            </label>
+                          )}
+                        </div>
+                        {editPdf && !pdf.file && (
+                          <p className="text-sm text-gray-500 mt-2">
+                            File saat ini akan tetap digunakan jika tidak ada file baru yang diupload
+                          </p>
                         )}
                       </div>
-                      {editPdf && !pdf.file && (
-                        <p className="text-sm text-gray-500 mt-2">
-                          File saat ini akan tetap digunakan jika tidak ada file baru yang diupload
-                        </p>
-                      )}
-                    </div>
-                  </motion.div>
-                ))}
+                    </motion.div>
+                  ))}
+                </div>
               </div>
             </div>
+
+            {/* Debug Panel */}
+            {debugInfo.length > 0 && (
+              <div className="w-80 border-l bg-gray-50 p-4 overflow-y-auto max-h-[70vh]">
+                <div className="flex items-center gap-2 mb-3">
+                  <FiAlertCircle className="w-4 h-4 text-blue-500" />
+                  <h3 className="text-sm font-semibold text-gray-700">Debug Info</h3>
+                </div>
+                <div className="space-y-1">
+                  {debugInfo.map((info, index) => (
+                    <p key={index} className="text-xs text-gray-600 font-mono bg-white p-2 rounded border">
+                      {info}
+                    </p>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Footer */}
