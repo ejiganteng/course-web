@@ -260,7 +260,7 @@ export default function AdminPage() {
                 <input
                   type="text"
                   placeholder="Cari pengguna..."
-                  className="w-full pl-10 py-2 rounded-xl border-3 border-gray-200 bg-white focus:border-gray-500 focus:outline-none text-gray-400"
+                  className="w-full pl-10 py-2 rounded-xl border-2 border-gray-200 bg-white focus:border-gray-500 focus:outline-none text-gray-400"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />

@@ -189,12 +189,12 @@ export default function AuthPage() {
   if (!isMounted) return null;
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-800 via-gray-900 to-black relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-bl from-purple-900 via-black to-black relative overflow-hidden">
       <div className="relative z-10 w-full max-w-md px-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-gray-800 bg-opacity-80 backdrop-blur-sm rounded-2xl shadow-xl p-8 space-y-6 relative"
+          className="bg-gray-950 bg-opacity-80 backdrop-blur-sm rounded-2xl shadow-xl p-8 space-y-6 relative"
         >
           <Link
             href="/"

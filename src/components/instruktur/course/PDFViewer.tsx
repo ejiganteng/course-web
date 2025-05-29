@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   FiZoomIn, 
   FiZoomOut, 
@@ -13,17 +14,21 @@ import {
   FiEye,
   FiAlertCircle,
   FiLoader,
-  FiEdit
+  FiEdit,
+  FiCheck,
+  FiInfo,
+  FiPlay,
+  FiPause
 } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 
 interface PdfViewerProps {
-  pdfPath?: string;        // Untuk compatibility dengan CourseDetailPage
-  pdfId?: string | number; // Untuk direct ID usage
+  pdfPath?: string;
+  pdfId?: string | number;
   title?: string;
   className?: string;
-  onEdit?: () => void;     // Callback untuk edit PDF
-  showEditButton?: boolean; // Show edit button
+  onEdit?: () => void;
+  showEditButton?: boolean;
 }
 
 export default function PdfViewer({ 
@@ -43,25 +48,21 @@ export default function PdfViewer({
   const [showViewer, setShowViewer] = useState(false);
   const [downloadCount, setDownloadCount] = useState(0);
   const [actualPdfId, setActualPdfId] = useState<string | number | null>(null);
+  const [loadingProgress, setLoadingProgress] = useState(0);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setMounted(true);
     
-    // Determine PDF ID from props
     if (pdfId) {
       setActualPdfId(pdfId);
     } else if (pdfPath) {
-      // Extract PDF ID from path or use path as fallback
-      // Ini akan digunakan jika dipanggil dari CourseDetailPage
-      // Kita perlu mendapatkan ID PDF dari context atau props lain
       console.warn('PdfViewer: pdfPath provided but pdfId is preferred for backend compatibility');
       console.log('Provided pdfPath:', pdfPath);
     }
   }, [pdfId, pdfPath]);
 
-  // Function to get auth headers - sama seperti di PdfManager
   const getAuthHeaders = (): HeadersInit => {
     const token = localStorage.getItem('token');
     if (token) {
@@ -70,12 +71,10 @@ export default function PdfViewer({
     return {};
   };
 
-  // Determine endpoint based on available props
   const getDownloadEndpoint = () => {
     if (actualPdfId) {
       return `${process.env.NEXT_PUBLIC_API_URL}/pdfs/${actualPdfId}/download`;
     } else if (pdfPath) {
-      // Fallback: construct URL from storage path
       const storagePath = pdfPath.replace('public/', 'storage/');
       const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '');
       return `${baseUrl}/${storagePath}`;
@@ -85,7 +84,6 @@ export default function PdfViewer({
 
   const downloadEndpoint = getDownloadEndpoint();
 
-  // Load PDF as blob for inline viewing
   const loadPdfBlob = async () => {
     if (!downloadEndpoint) {
       setError('Tidak dapat menentukan endpoint PDF');
@@ -94,13 +92,14 @@ export default function PdfViewer({
 
     setLoading(true);
     setError(null);
+    setLoadingProgress(0);
     
     try {
       console.log('Loading PDF from endpoint:', downloadEndpoint);
       
       const response = await fetch(downloadEndpoint, {
         method: 'GET',
-        headers: actualPdfId ? getAuthHeaders() : {}, // Only use auth for API endpoints
+        headers: actualPdfId ? getAuthHeaders() : {},
       });
 
       if (!response.ok) {
@@ -114,9 +113,21 @@ export default function PdfViewer({
         throw new Error(errorMessage);
       }
 
+      // Simulate loading progress
+      const progressInterval = setInterval(() => {
+        setLoadingProgress(prev => {
+          if (prev >= 90) {
+            clearInterval(progressInterval);
+            return prev;
+          }
+          return prev + 10;
+        });
+      }, 100);
+
       const blob = await response.blob();
+      clearInterval(progressInterval);
+      setLoadingProgress(100);
       
-      // Validasi tipe file
       if (!blob.type.includes('pdf') && blob.type !== 'application/octet-stream') {
         throw new Error('File yang dimuat bukan PDF yang valid');
       }
@@ -138,10 +149,10 @@ export default function PdfViewer({
       toast.error(`Gagal memuat PDF: ${errorMessage}`);
     } finally {
       setLoading(false);
+      setLoadingProgress(0);
     }
   };
 
-  // Direct download function
   const handleDownload = async () => {
     if (!downloadEndpoint) {
       toast.error('Tidak dapat menentukan endpoint download');
@@ -187,7 +198,6 @@ export default function PdfViewer({
     }
   };
 
-  // Open in new tab dengan blob URL
   const openInNewTab = async () => {
     try {
       if (!pdfBlob) {
@@ -261,9 +271,9 @@ export default function PdfViewer({
 
   if (!mounted) {
     return (
-      <div className={`flex justify-center items-center h-32 ${className}`}>
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-        <span className="ml-3 text-gray-600">Memuat PDF viewer...</span>
+      <div className={`flex justify-center items-center h-20 ${className}`}>
+        <div className="animate-spin rounded-full h-5 w-5 border-2 border-emerald-200 border-t-emerald-600"></div>
+        <span className="ml-2 text-emerald-700 text-sm">Memuat PDF viewer...</span>
       </div>
     );
   }
@@ -271,17 +281,17 @@ export default function PdfViewer({
   if (!downloadEndpoint) {
     return (
       <div className={`w-full ${className}`}>
-        <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-          <FiAlertCircle className="w-8 h-8 text-red-500 mx-auto mb-2" />
+        <div className="bg-red-50 border border-red-200 rounded-2xl p-6 text-center">
+          <FiAlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-red-800 mb-2">Konfigurasi PDF Tidak Valid</h3>
-          <p className="text-red-600">
+          <p className="text-red-600 mb-4">
             Tidak ada pdfId atau pdfPath yang valid. Pastikan komponen dipanggil dengan props yang benar.
           </p>
-          <div className="mt-4 text-sm text-red-500">
-            <p>Received props:</p>
-            <ul className="text-left mt-2">
-              <li>pdfId: {pdfId ? pdfId.toString() : 'undefined'}</li>
-              <li>pdfPath: {pdfPath || 'undefined'}</li>
+          <div className="bg-red-100 rounded-lg p-4 text-sm text-red-700">
+            <p className="font-medium mb-2">Props yang diterima:</p>
+            <ul className="text-left space-y-1">
+              <li>• pdfId: {pdfId ? pdfId.toString() : 'undefined'}</li>
+              <li>• pdfPath: {pdfPath || 'undefined'}</li>
             </ul>
           </div>
         </div>
@@ -292,226 +302,274 @@ export default function PdfViewer({
   return (
     <div ref={containerRef} className={`w-full ${className}`}>
       {/* PDF Info Card */}
-      <div className="bg-white border border-gray-200 rounded-lg p-4">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-6 shadow-lg mb-4"
+      >
         <div className="flex items-center justify-between">
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <FiFile className="w-6 h-6 text-red-500" />
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-gradient-to-r from-red-500 to-red-600 rounded-xl flex items-center justify-center shadow-lg">
+              <FiFile className="w-6 h-6 text-white" />
             </div>
-            <div className="ml-3">
-              <h4 className="text-sm font-medium text-gray-900">
+            <div>
+              <h4 className="text-lg font-bold text-gray-900">
                 {title || `PDF Document ${actualPdfId || 'Unknown'}`}
               </h4>
-              <p className="text-xs text-gray-500">
-                {actualPdfId ? `ID: ${actualPdfId}` : 'File Path Mode'} • Siap untuk dilihat atau diunduh
-              </p>
+              <div className="flex items-center gap-4 text-sm text-gray-500">
+                <span className="flex items-center gap-1">
+                  <FiInfo className="w-4 h-4" />
+                  {actualPdfId ? `ID: ${actualPdfId}` : 'File Path Mode'}
+                </span>
+                <span>•</span>
+                <span>Siap untuk dilihat atau diunduh</span>
+              </div>
             </div>
           </div>
-          <div className="flex items-center space-x-2">
-            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-              Tersedia
-            </span>
-            {downloadCount > 0 && (
-              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                {downloadCount} unduhan
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                <FiCheck className="w-3 h-3 mr-1" />
+                Tersedia
               </span>
-            )}
+              {downloadCount > 0 && (
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                  {downloadCount} unduhan
+                </span>
+              )}
+            </div>
           </div>
         </div>
 
         {/* Action Buttons */}
-        <div className="mt-4">
-          <div className="flex flex-wrap gap-2">
+        <div className="mt-6">
+          <div className="flex flex-wrap gap-3">
             {!showViewer ? (
-              <button
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
                 onClick={handleShowViewer}
-                className="inline-flex items-center px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-md transition-colors"
+                className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-sm font-medium rounded-xl transition-all duration-300 shadow-lg"
               >
                 <FiEye className="w-4 h-4 mr-2" />
                 Lihat PDF
-              </button>
+              </motion.button>
             ) : (
-              <button
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
                 onClick={handleCloseViewer}
-                className="inline-flex items-center px-3 py-2 bg-gray-600 hover:bg-gray-700 text-white text-sm font-medium rounded-md transition-colors"
+                className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white text-sm font-medium rounded-xl transition-all duration-300 shadow-lg"
               >
                 <FiMinimize className="w-4 h-4 mr-2" />
                 Tutup Viewer
-              </button>
+              </motion.button>
             )}
             
-            <button
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
               onClick={openInNewTab}
-              className="inline-flex items-center px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition-colors"
+              className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white text-sm font-medium rounded-xl transition-all duration-300 shadow-lg"
             >
               <FiExternalLink className="w-4 h-4 mr-2" />
               Tab Baru
-            </button>
+            </motion.button>
 
-            <button
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
               onClick={handleDownload}
-              className="inline-flex items-center px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-md transition-colors"
+              className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white text-sm font-medium rounded-xl transition-all duration-300 shadow-lg"
             >
               <FiDownload className="w-4 h-4 mr-2" />
               Unduh
-            </button>
+            </motion.button>
 
             {showEditButton && onEdit && actualPdfId && (
-              <button
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
                 onClick={onEdit}
-                className="inline-flex items-center px-3 py-2 bg-orange-600 hover:bg-orange-700 text-white text-sm font-medium rounded-md transition-colors"
+                className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white text-sm font-medium rounded-xl transition-all duration-300 shadow-lg"
               >
                 <FiEdit className="w-4 h-4 mr-2" />
                 Edit
-              </button>
+              </motion.button>
             )}
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* PDF Viewer Section */}
-      {showViewer && (
-        <div className="mt-4 space-y-4">
-          {/* Controls */}
-          <div className="flex flex-wrap items-center justify-between bg-gray-50 p-3 rounded-lg gap-3">
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1 bg-white border rounded-md">
-                <button
-                  onClick={() => setScale(prev => Math.max(50, prev - 10))}
-                  className="p-2 hover:bg-gray-50 transition-colors"
-                  title="Perkecil"
-                  disabled={loading}
-                >
-                  <FiZoomOut className="w-4 h-4" />
-                </button>
-                
-                <span className="text-sm text-gray-700 px-3 py-2 min-w-[60px] text-center">
-                  {scale}%
-                </span>
-                
-                <button
-                  onClick={() => setScale(prev => Math.min(200, prev + 10))}
-                  className="p-2 hover:bg-gray-50 transition-colors"
-                  title="Perbesar"
-                  disabled={loading}
-                >
-                  <FiZoomIn className="w-4 h-4" />
-                </button>
-              </div>
-
-              <button
-                onClick={() => setScale(100)}
-                className="px-3 py-2 bg-white border rounded-md hover:bg-gray-50 text-sm transition-colors"
-                title="Reset zoom"
-                disabled={loading}
-              >
-                Reset
-              </button>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <button
-                onClick={retryLoad}
-                className="p-2 bg-white border rounded-md hover:bg-gray-50 transition-colors"
-                title="Muat ulang PDF"
-                disabled={loading}
-              >
-                <FiRefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-              </button>
-
-              <button
-                onClick={toggleFullscreen}
-                className="p-2 bg-white border rounded-md hover:bg-gray-50 transition-colors"
-                title={isFullscreen ? "Keluar fullscreen" : "Masuk fullscreen"}
-              >
-                {isFullscreen ? <FiMinimize className="w-4 h-4" /> : <FiMaximize className="w-4 h-4" />}
-              </button>
-            </div>
-          </div>
-
-          {/* PDF Content */}
-          <div className="border border-gray-300 rounded-lg overflow-hidden bg-white">
-            {loading && (
-              <div className="flex flex-col justify-center items-center h-96">
-                <FiLoader className="w-8 h-8 text-indigo-600 animate-spin mb-3" />
-                <span className="text-gray-600">Memuat PDF...</span>
-                <p className="text-sm text-gray-500 mt-2">
-                  {actualPdfId ? 'Mengunduh dari API...' : 'Memuat dari storage...'}
-                </p>
-              </div>
-            )}
-
-            {error && (
-              <div className="flex flex-col justify-center items-center h-96 text-center p-6">
-                <FiAlertCircle className="w-12 h-12 text-red-500 mb-4" />
-                <h3 className="text-lg font-semibold text-gray-800 mb-2">Gagal Memuat PDF</h3>
-                <p className="text-gray-600 mb-4 max-w-lg">
-                  {error}
-                </p>
-                
-                <div className="flex gap-2 justify-center flex-wrap">
-                  <button 
-                    onClick={retryLoad}
-                    className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md transition-colors flex items-center gap-2"
+      <AnimatePresence>
+        {showViewer && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="space-y-4"
+          >
+            {/* Controls */}
+            <div className="flex flex-wrap items-center justify-between bg-white/70 backdrop-blur-xl p-4 rounded-2xl gap-4 border border-white/20 shadow-lg">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-xl shadow-sm">
+                  <button
+                    onClick={() => setScale(prev => Math.max(50, prev - 10))}
+                    className="p-2 hover:bg-gray-50 transition-colors rounded-l-xl"
+                    title="Perkecil"
+                    disabled={loading}
                   >
-                    <FiRefreshCw className="w-4 h-4" />
-                    Coba Lagi
+                    <FiZoomOut className="w-4 h-4" />
                   </button>
-                  <button 
-                    onClick={handleDownload}
-                    className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md transition-colors flex items-center gap-2"
+                  
+                  <span className="text-sm text-gray-700 px-4 py-2 min-w-[70px] text-center font-medium">
+                    {scale}%
+                  </span>
+                  
+                  <button
+                    onClick={() => setScale(prev => Math.min(200, prev + 10))}
+                    className="p-2 hover:bg-gray-50 transition-colors rounded-r-xl"
+                    title="Perbesar"
+                    disabled={loading}
                   >
-                    <FiDownload className="w-4 h-4" />
-                    Unduh Saja
+                    <FiZoomIn className="w-4 h-4" />
                   </button>
                 </div>
-                
-                <details className="mt-4 text-left bg-gray-100 p-3 rounded max-w-md">
-                  <summary className="cursor-pointer text-sm text-gray-600 font-medium">
-                    Detail Error
-                  </summary>
-                  <div className="mt-2 text-xs space-y-1">
-                    <p><strong>PDF ID:</strong> {actualPdfId || 'N/A'}</p>
-                    <p><strong>PDF Path:</strong> {pdfPath || 'N/A'}</p>
-                    <p><strong>Endpoint:</strong> {downloadEndpoint}</p>
-                    <p><strong>Error:</strong> {error}</p>
+
+                <button
+                  onClick={() => setScale(100)}
+                  className="px-4 py-2 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 text-sm transition-colors shadow-sm"
+                  title="Reset zoom"
+                  disabled={loading}
+                >
+                  Reset
+                </button>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={retryLoad}
+                  className="p-2 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors shadow-sm"
+                  title="Muat ulang PDF"
+                  disabled={loading}
+                >
+                  <FiRefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                </button>
+
+                <button
+                  onClick={toggleFullscreen}
+                  className="p-2 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors shadow-sm"
+                  title={isFullscreen ? "Keluar fullscreen" : "Masuk fullscreen"}
+                >
+                  {isFullscreen ? <FiMinimize className="w-4 h-4" /> : <FiMaximize className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            {/* PDF Content */}
+            <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl overflow-hidden shadow-lg">
+              {loading && (
+                <div className="flex flex-col justify-center items-center h-80 p-6">
+                  <div className="w-12 h-12 bg-gradient-to-r from-emerald-100 to-teal-100 rounded-full flex items-center justify-center mb-4">
+                    <FiLoader className="w-6 h-6 text-emerald-600 animate-spin" />
                   </div>
-                </details>
-              </div>
-            )}
+                  <span className="text-base font-medium text-gray-800 mb-2">Memuat PDF...</span>
+                  <p className="text-sm text-gray-500 mb-3">
+                    {actualPdfId ? 'Mengunduh dari API...' : 'Memuat dari storage...'}
+                  </p>
+                  
+                  {/* Loading Progress Bar */}
+                  <div className="w-48 bg-gray-200 rounded-full h-1.5 mb-2">
+                    <div 
+                      className="bg-gradient-to-r from-emerald-500 to-teal-500 h-1.5 rounded-full transition-all duration-300"
+                      style={{ width: `${loadingProgress}%` }}
+                    ></div>
+                  </div>
+                  <span className="text-xs text-gray-400">{loadingProgress}%</span>
+                </div>
+              )}
 
-            {!loading && !error && pdfBlob && (
-              <div className="relative" style={{ height: '600px' }}>
-                <iframe
-                  ref={iframeRef}
-                  src={pdfBlob}
-                  className="w-full h-full"
-                  title={title || 'PDF Document'}
-                  style={{ 
-                    transform: `scale(${scale / 100})`, 
-                    transformOrigin: 'top left',
-                    width: `${100 / scale * 100}%`,
-                    height: `${100 / scale * 100}%`
-                  }}
-                  onLoad={() => console.log('PDF iframe loaded successfully')}
-                  onError={() => {
-                    console.error('PDF iframe failed to load');
-                    setError('PDF tidak dapat ditampilkan dalam iframe');
-                  }}
-                />
-              </div>
-            )}
-          </div>
+              {error && (
+                <div className="flex flex-col justify-center items-center h-80 text-center p-6">
+                  <div className="w-16 h-16 bg-gradient-to-r from-red-100 to-red-200 rounded-full flex items-center justify-center mb-4">
+                    <FiAlertCircle className="w-8 h-8 text-red-500" />
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-800 mb-2">Gagal Memuat PDF</h3>
+                  <p className="text-gray-600 mb-4 max-w-md leading-relaxed text-sm">
+                    {error}
+                  </p>
+                  
+                  <div className="flex gap-2 justify-center flex-wrap">
+                    <button 
+                      onClick={retryLoad}
+                      className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white px-4 py-2 rounded-xl transition-all duration-300 flex items-center gap-2 shadow-lg text-sm"
+                    >
+                      <FiRefreshCw className="w-4 h-4" />
+                      Coba Lagi
+                    </button>
+                    <button 
+                      onClick={handleDownload}
+                      className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-4 py-2 rounded-xl transition-all duration-300 flex items-center gap-2 shadow-lg text-sm"
+                    >
+                      <FiDownload className="w-4 h-4" />
+                      Unduh Saja
+                    </button>
+                  </div>
+                  
+                  <details className="mt-4 text-left bg-gray-50 p-3 rounded-xl max-w-md w-full">
+                    <summary className="cursor-pointer text-xs text-gray-600 font-medium mb-2">
+                      Detail Error
+                    </summary>
+                    <div className="text-xs space-y-1 text-gray-500">
+                      <div><strong>PDF ID:</strong> {actualPdfId || 'N/A'}</div>
+                      <div><strong>PDF Path:</strong> {pdfPath || 'N/A'}</div>
+                      <div><strong>Endpoint:</strong> {downloadEndpoint}</div>
+                      <div><strong>Error:</strong> {error}</div>
+                    </div>
+                  </details>
+                </div>
+              )}
 
-          {/* Info Footer */}
-          <div className="text-xs text-gray-500 text-center p-2 bg-gray-50 rounded">
-            <p>
-              <strong>Mode:</strong> {actualPdfId ? `API Endpoint (/api/pdfs/${actualPdfId}/download)` : `Storage Path (${pdfPath})`} • 
-              {actualPdfId ? 'Menggunakan autentikasi Bearer token' : 'Akses langsung ke storage'}
-            </p>
-          </div>
-        </div>
-      )}
+              {!loading && !error && pdfBlob && (
+                <div className="relative" style={{ height: '600px' }}>
+                  <iframe
+                    ref={iframeRef}
+                    src={pdfBlob}
+                    className="w-full h-full rounded-2xl"
+                    title={title || 'PDF Document'}
+                    style={{ 
+                      transform: `scale(${scale / 100})`, 
+                      transformOrigin: 'top left',
+                      width: `${100 / scale * 100}%`,
+                      height: `${100 / scale * 100}%`
+                    }}
+                    onLoad={() => console.log('PDF iframe loaded successfully')}
+                    onError={() => {
+                      console.error('PDF iframe failed to load');
+                      setError('PDF tidak dapat ditampilkan dalam iframe');
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Info Footer */}
+            <div className="text-center p-4 bg-white/50 backdrop-blur-xl rounded-2xl border border-white/20">
+              <p className="text-xs text-gray-500">
+                <strong>Mode:</strong>{' '}
+                {actualPdfId ? (
+                  <span className="text-emerald-600">API Endpoint (/api/pdfs/{actualPdfId}/download)</span>
+                ) : (
+                  <span className="text-blue-600">Storage Path ({pdfPath})</span>
+                )}
+                {' • '}
+                {actualPdfId ? 'Menggunakan autentikasi Bearer token' : 'Akses langsung ke storage'}
+              </p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

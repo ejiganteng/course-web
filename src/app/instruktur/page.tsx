@@ -59,7 +59,6 @@ export default function InstrukturPage() {
     totalRevenue: 0,
     thisMonthRevenue: 0,
   });
-  const [loading, setLoading] = useState(true);
   const [userData, setUserData] = useState({ name: '', id: '' });
 
   useEffect(() => {
@@ -92,8 +91,6 @@ export default function InstrukturPage() {
     } catch (error) {
       console.error('Error fetching data:', error);
       toast.error('Terjadi kesalahan saat memuat data');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -109,7 +106,7 @@ export default function InstrukturPage() {
       draftCourses: draft,
       totalPdfs,
       totalRevenue,
-      thisMonthRevenue: totalRevenue * 0.3, // Simulasi pendapatan bulan ini
+      thisMonthRevenue: totalRevenue * 0.3,
     });
   };
 
@@ -182,19 +179,6 @@ export default function InstrukturPage() {
       hoverColor: 'hover:from-orange-600 hover:to-red-700',
     },
   ];
-
-  if (loading) {
-    return (
-      <div className="flex h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50">
-        <div className="flex-1 lg:ml-64 p-4 lg:p-8 overflow-auto pt-20 lg:pt-8">
-          <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-16 w-16 border-4 border-emerald-200 border-t-emerald-600"></div>
-            <span className="ml-4 text-emerald-700 font-medium">Memuat dashboard...</span>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="flex h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50">

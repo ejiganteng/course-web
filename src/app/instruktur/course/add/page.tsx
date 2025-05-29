@@ -1,11 +1,24 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { toast } from 'react-toastify';
-import { FiArrowLeft, FiPlus, FiTrash2, FiUpload, FiFile, FiEye } from 'react-icons/fi';
+import { 
+  FiArrowLeft, 
+  FiPlus, 
+  FiTrash2, 
+  FiUpload, 
+  FiFile, 
+  FiEye,
+  FiBookOpen,
+  FiDollarSign,
+  FiFileText,
+  FiTag,
+  FiImage,
+  FiSave
+} from 'react-icons/fi';
 
 interface Category {
   id: number;
@@ -24,7 +37,6 @@ export default function AddCoursePage() {
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   
-  // Form state - sesuai dengan CourseStoreRequest
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -82,13 +94,11 @@ export default function AddCoursePage() {
   const handleThumbnailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Validate file type - sesuai backend: jpg,jpeg,png
       if (!['image/jpeg', 'image/jpg', 'image/png'].includes(file.type)) {
         toast.error('Thumbnail harus berupa file JPG, JPEG, atau PNG');
         return;
       }
       
-      // Validate file size (10MB = 10240KB)
       if (file.size > 10240 * 1024) {
         toast.error('Ukuran thumbnail maksimal 10MB');
         return;
@@ -114,7 +124,6 @@ export default function AddCoursePage() {
   const removePdfFile = (id: string) => {
     setPdfFiles(prev => {
       const filtered = prev.filter(pdf => pdf.id !== id);
-      // Reorder indices
       return filtered.map((pdf, index) => ({
         ...pdf,
         order_index: index + 1
@@ -129,13 +138,11 @@ export default function AddCoursePage() {
   };
 
   const handlePdfFileChange = (id: string, file: File) => {
-    // Validate file type - hanya PDF
     if (file.type !== 'application/pdf') {
       toast.error('File harus berupa PDF');
       return;
     }
     
-    // Validate file size (10MB = 10240KB)
     if (file.size > 10240 * 1024) {
       toast.error('Ukuran file PDF maksimal 10MB');
       return;
@@ -150,7 +157,6 @@ export default function AddCoursePage() {
   };
 
   const validateForm = () => {
-    // Sesuai CourseStoreRequest validation
     if (!formData.title.trim()) {
       toast.error('Judul kursus wajib diisi');
       return false;
@@ -177,7 +183,6 @@ export default function AddCoursePage() {
     setLoading(true);
 
     try {
-      // Create course first - sesuai CourseStoreRequest
       const courseFormData = new FormData();
       courseFormData.append('title', formData.title.trim());
       courseFormData.append('description', formData.description.trim());
@@ -185,32 +190,23 @@ export default function AddCoursePage() {
       courseFormData.append('is_published', formData.is_published ? '1' : '0');
       courseFormData.append('thumbnail', thumbnail!);
       
-      // Add category IDs - sesuai backend format
       formData.category_ids.forEach(id => {
         courseFormData.append('category_ids[]', id.toString());
       });
-
-      console.log('Sending course data:');
-      for (let [key, value] of courseFormData.entries()) {
-        console.log(key, value instanceof File ? `${value.name} (${value.size} bytes)` : value);
-      }
 
       const token = localStorage.getItem('token');
       const courseResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/courses`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
-          // Jangan set Content-Type untuk FormData, browser akan set otomatis
         },
         body: courseFormData,
       });
 
       if (!courseResponse.ok) {
         const errorData = await courseResponse.json();
-        console.error('Course creation error:', errorData);
         
         if (errorData.errors) {
-          // Display validation errors
           Object.keys(errorData.errors).forEach(key => {
             errorData.errors[key].forEach((error: string) => {
               toast.error(`${key}: ${error}`);
@@ -225,7 +221,7 @@ export default function AddCoursePage() {
       const courseData = await courseResponse.json();
       const courseId = courseData.data.id;
 
-      // Upload PDFs if any - sesuai PdfRequest format
+      // Upload PDFs if any
       if (pdfFiles.length > 0) {
         const validPdfs = pdfFiles.filter(pdf => pdf.file && pdf.title.trim());
         
@@ -238,11 +234,6 @@ export default function AddCoursePage() {
             pdfFormData.append(`pdfs[${index}][order_index]`, pdf.order_index.toString());
           });
 
-          console.log('Sending PDF data:');
-          for (let [key, value] of pdfFormData.entries()) {
-            console.log(key, value instanceof File ? `${value.name} (${value.size} bytes)` : value);
-          }
-
           const pdfResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/courses/${courseId}/upload`, {
             method: 'POST',
             headers: {
@@ -252,8 +243,6 @@ export default function AddCoursePage() {
           });
 
           if (!pdfResponse.ok) {
-            const pdfError = await pdfResponse.json();
-            console.warn('PDF upload error:', pdfError);
             toast.warning('Kursus berhasil dibuat, tapi ada masalah dengan upload PDF');
           } else {
             toast.success('Kursus dan PDF berhasil dibuat');
@@ -276,33 +265,63 @@ export default function AddCoursePage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-100">
-      <div className="flex-1 ml-64 p-8">
+    <div className="flex min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50">
+      <div className="flex-1 lg:ml-64 p-4 lg:p-8 overflow-auto pt-20 lg:pt-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <div className="mb-8 flex items-center gap-4">
-            <Link
-              href="/instruktur/course"
-              className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+          {/* Header */}
+          <div className="mb-8">
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex items-center gap-4"
             >
-              <FiArrowLeft className="w-4 h-4" />
-              Kembali
-            </Link>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-800">Tambah Kursus Baru</h1>
-              <p className="text-gray-600">Buat kursus baru dengan materi PDF</p>
-            </div>
+              <Link
+                href="/instruktur/course"
+                className="bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white px-4 py-2 rounded-xl flex items-center gap-2 transition-all duration-300 shadow-lg"
+              >
+                <FiArrowLeft className="w-4 h-4" />
+                Kembali
+              </Link>
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center shadow-lg">
+                  <FiPlus className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">
+                    Tambah Kursus Baru
+                  </h1>
+                  <p className="text-slate-600 text-sm lg:text-base">
+                    Buat kursus baru dengan materi PDF
+                  </p>
+                </div>
+              </div>
+            </motion.div>
           </div>
 
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Course Information */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+          {/* Main Form */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="bg-white/70 backdrop-blur-xl rounded-3xl shadow-xl border border-white/20 overflow-hidden"
+          >
+            <div className="p-6 border-b border-gray-200/50 bg-gradient-to-r from-white/50 to-emerald-50/50">
+              <div className="flex items-center gap-3">
+                <FiBookOpen className="w-5 h-5 text-emerald-600" />
+                <h2 className="text-xl font-bold text-gray-800">Informasi Kursus</h2>
+              </div>
+            </div>
+
+            <form onSubmit={handleSubmit} className="p-6 space-y-8">
+              {/* Basic Information */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                    <FiBookOpen className="w-4 h-4 text-emerald-600" />
                     Judul Kursus *
                   </label>
                   <input
@@ -312,13 +331,14 @@ export default function AddCoursePage() {
                     onChange={handleInputChange}
                     required
                     maxLength={255}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    placeholder="Masukkan judul kursus"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white focus:border-emerald-500 focus:outline-none transition-colors"
+                    placeholder="Masukkan judul kursus yang menarik"
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                    <FiDollarSign className="w-4 h-4 text-emerald-600" />
                     Harga *
                   </label>
                   <input
@@ -329,14 +349,15 @@ export default function AddCoursePage() {
                     required
                     min="0"
                     step="0.01"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white focus:border-emerald-500 focus:outline-none transition-colors"
                     placeholder="0"
                   />
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                  <FiFileText className="w-4 h-4 text-emerald-600" />
                   Deskripsi
                 </label>
                 <textarea
@@ -344,26 +365,27 @@ export default function AddCoursePage() {
                   value={formData.description}
                   onChange={handleInputChange}
                   rows={4}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  placeholder="Deskripsi kursus..."
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white focus:border-emerald-500 focus:outline-none transition-colors resize-none"
+                  placeholder="Jelaskan tentang kursus ini..."
                 />
               </div>
 
               {/* Thumbnail */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                  <FiImage className="w-4 h-4 text-emerald-600" />
                   Thumbnail *
                 </label>
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6">
+                <div className="border-2 border-dashed border-gray-200 rounded-2xl p-8 hover:border-emerald-300 transition-colors">
                   {thumbnailPreview ? (
                     <div className="text-center">
                       <img 
                         src={thumbnailPreview} 
                         alt="Preview" 
-                        className="mx-auto h-32 w-auto object-cover rounded-lg mb-4"
+                        className="mx-auto h-48 w-auto object-cover rounded-xl mb-4 shadow-lg"
                       />
-                      <div className="space-x-2">
-                        <label className="cursor-pointer bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm transition-colors">
+                      <div className="flex justify-center gap-3">
+                        <label className="cursor-pointer bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm transition-colors">
                           Ganti Thumbnail
                           <input
                             type="file"
@@ -378,18 +400,24 @@ export default function AddCoursePage() {
                             setThumbnail(null);
                             setThumbnailPreview(null);
                           }}
-                          className="text-red-600 hover:text-red-800 text-sm"
+                          className="text-red-600 hover:text-red-800 text-sm px-4 py-2 rounded-lg border border-red-200 hover:bg-red-50 transition-colors"
                         >
-                          Hapus gambar
+                          Hapus
                         </button>
                       </div>
                     </div>
                   ) : (
                     <div className="text-center">
-                      <FiUpload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                      <FiUpload className="mx-auto h-16 w-16 text-gray-400 mb-4" />
                       <label className="cursor-pointer">
-                        <span className="mt-2 block text-sm font-medium text-gray-900">
-                          Upload thumbnail
+                        <span className="block text-lg font-semibold text-gray-700 mb-2">
+                          Upload Thumbnail
+                        </span>
+                        <span className="block text-sm text-gray-500 mb-4">
+                          JPG, JPEG, PNG hingga 10MB
+                        </span>
+                        <span className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-xl transition-colors inline-block">
+                          Pilih File
                         </span>
                         <input
                           type="file"
@@ -398,7 +426,6 @@ export default function AddCoursePage() {
                           className="hidden"
                         />
                       </label>
-                      <p className="mt-1 text-sm text-gray-500">JPG, JPEG, PNG up to 10MB</p>
                     </div>
                   )}
                 </div>
@@ -406,20 +433,21 @@ export default function AddCoursePage() {
 
               {/* Categories */}
               {categories.length > 0 && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                    <FiTag className="w-4 h-4 text-emerald-600" />
                     Kategori
                   </label>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                     {categories.map((category) => (
-                      <label key={category.id} className="flex items-center">
+                      <label key={category.id} className="flex items-center p-3 rounded-xl border border-gray-200 hover:border-emerald-200 hover:bg-emerald-50 transition-colors cursor-pointer">
                         <input
                           type="checkbox"
                           checked={formData.category_ids.includes(category.id)}
                           onChange={() => handleCategoryChange(category.id)}
-                          className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                          className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500 mr-2"
                         />
-                        <span className="ml-2 text-sm text-gray-700">{category.name}</span>
+                        <span className="text-sm font-medium text-gray-700">{category.name}</span>
                       </label>
                     ))}
                   </div>
@@ -427,29 +455,35 @@ export default function AddCoursePage() {
               )}
 
               {/* Published Status */}
-              <div className="flex items-center">
+              <div className="flex items-center p-4 rounded-xl border border-gray-200 bg-gradient-to-r from-emerald-50 to-teal-50">
                 <input
                   type="checkbox"
                   name="is_published"
                   checked={formData.is_published}
                   onChange={handleInputChange}
-                  className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                  className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500 mr-3"
                 />
-                <label className="ml-2 text-sm text-gray-700">
-                  Publikasikan kursus
-                </label>
+                <div>
+                  <label className="text-sm font-semibold text-gray-700 cursor-pointer">
+                    Publikasikan kursus
+                  </label>
+                  <p className="text-xs text-gray-500">
+                    Kursus akan langsung dapat dilihat oleh peserta
+                  </p>
+                </div>
               </div>
 
-              {/* PDF Files */}
-              <div>
-                <div className="flex justify-between items-center mb-4">
-                  <label className="block text-sm font-medium text-gray-700">
+              {/* PDF Files Section */}
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                    <FiFileText className="w-4 h-4 text-emerald-600" />
                     Materi PDF (Opsional)
                   </label>
                   <button
                     type="button"
                     onClick={addPdfFile}
-                    className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded-lg flex items-center gap-2 text-sm transition-colors"
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl flex items-center gap-2 text-sm transition-colors shadow-lg"
                   >
                     <FiPlus className="w-4 h-4" />
                     Tambah PDF
@@ -457,13 +491,18 @@ export default function AddCoursePage() {
                 </div>
 
                 {pdfFiles.length === 0 ? (
-                  <div className="text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">
-                    <FiFile className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-500 mb-4">Belum ada PDF yang ditambahkan</p>
+                  <div className="text-center py-12 border-2 border-dashed border-gray-200 rounded-2xl">
+                    <FiFile className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                      Belum ada PDF yang ditambahkan
+                    </h3>
+                    <p className="text-gray-500 mb-6">
+                      Tambahkan materi PDF untuk melengkapi kursus Anda
+                    </p>
                     <button
                       type="button"
                       onClick={addPdfFile}
-                      className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 mx-auto transition-colors"
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-xl flex items-center gap-2 mx-auto transition-colors shadow-lg"
                     >
                       <FiPlus className="w-4 h-4" />
                       Tambah PDF Pertama
@@ -471,132 +510,140 @@ export default function AddCoursePage() {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {pdfFiles.map((pdf, index) => (
-                      <motion.div 
-                        key={pdf.id} 
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -20 }}
-                        className="border border-gray-200 rounded-lg p-4"
-                      >
-                        <div className="flex justify-between items-start mb-3">
-                          <h4 className="text-sm font-medium text-gray-700">PDF {index + 1}</h4>
-                          <button
-                            type="button"
-                            onClick={() => removePdfFile(pdf.id)}
-                            className="text-red-600 hover:text-red-800"
-                          >
-                            <FiTrash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                          <div className="md:col-span-2">
-                            <label className="block text-sm text-gray-600 mb-1">Judul PDF *</label>
-                            <input
-                              type="text"
-                              value={pdf.title}
-                              onChange={(e) => updatePdfFile(pdf.id, 'title', e.target.value)}
-                              maxLength={255}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                              placeholder="Masukkan judul PDF"
-                            />
+                    <AnimatePresence>
+                      {pdfFiles.map((pdf, index) => (
+                        <motion.div 
+                          key={pdf.id} 
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -20 }}
+                          className="border border-gray-200 rounded-2xl p-6 bg-white/50 backdrop-blur-sm"
+                        >
+                          <div className="flex justify-between items-start mb-4">
+                            <h4 className="text-lg font-semibold text-gray-700 flex items-center gap-2">
+                              <FiFile className="w-5 h-5 text-emerald-600" />
+                              PDF {index + 1}
+                            </h4>
+                            <button
+                              type="button"
+                              onClick={() => removePdfFile(pdf.id)}
+                              className="text-red-600 hover:text-red-800 p-2 hover:bg-red-50 rounded-lg transition-colors"
+                            >
+                              <FiTrash2 className="w-4 h-4" />
+                            </button>
                           </div>
                           
-                          <div>
-                            <label className="block text-sm text-gray-600 mb-1">Urutan</label>
-                            <input
-                              type="number"
-                              value={pdf.order_index}
-                              onChange={(e) => updatePdfFile(pdf.id, 'order_index', parseInt(e.target.value) || 1)}
-                              min="0"
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                            />
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                            <div className="md:col-span-2 space-y-2">
+                              <label className="text-sm font-medium text-gray-600">Judul PDF *</label>
+                              <input
+                                type="text"
+                                value={pdf.title}
+                                onChange={(e) => updatePdfFile(pdf.id, 'title', e.target.value)}
+                                maxLength={255}
+                                className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-emerald-500 focus:outline-none transition-colors"
+                                placeholder="Masukkan judul PDF"
+                              />
+                            </div>
+                            
+                            <div className="space-y-2">
+                              <label className="text-sm font-medium text-gray-600">Urutan</label>
+                              <input
+                                type="number"
+                                value={pdf.order_index}
+                                onChange={(e) => updatePdfFile(pdf.id, 'order_index', parseInt(e.target.value) || 1)}
+                                min="0"
+                                className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-emerald-500 focus:outline-none transition-colors"
+                              />
+                            </div>
                           </div>
-                        </div>
 
-                        <div className="mt-3">
-                          <label className="block text-sm text-gray-600 mb-1">File PDF *</label>
-                          <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
-                            {pdf.file ? (
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                  <FiFile className="w-5 h-5 text-red-500" />
-                                  <div>
-                                    <span className="text-sm text-gray-700 font-medium">{pdf.file.name}</span>
-                                    <p className="text-xs text-gray-500">
-                                      {(pdf.file.size / 1024 / 1024).toFixed(2)} MB
-                                    </p>
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-600">File PDF *</label>
+                            <div className="border-2 border-dashed border-gray-200 rounded-xl p-6">
+                              {pdf.file ? (
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-3">
+                                    <FiFile className="w-8 h-8 text-red-500" />
+                                    <div>
+                                      <p className="font-medium text-gray-800">{pdf.file.name}</p>
+                                      <p className="text-sm text-gray-500">
+                                        {(pdf.file.size / 1024 / 1024).toFixed(2)} MB
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <div className="flex gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => previewPdf(pdf.file!)}
+                                      className="text-blue-600 hover:text-blue-800 p-2 hover:bg-blue-50 rounded-lg transition-colors"
+                                      title="Preview PDF"
+                                    >
+                                      <FiEye className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => updatePdfFile(pdf.id, 'file', null)}
+                                      className="text-red-600 hover:text-red-800 p-2 hover:bg-red-50 rounded-lg transition-colors"
+                                      title="Hapus file"
+                                    >
+                                      <FiTrash2 className="w-4 h-4" />
+                                    </button>
                                   </div>
                                 </div>
-                                <div className="flex gap-2">
-                                  <button
-                                    type="button"
-                                    onClick={() => previewPdf(pdf.file!)}
-                                    className="text-blue-600 hover:text-blue-800 p-1"
-                                    title="Preview PDF"
-                                  >
-                                    <FiEye className="w-4 h-4" />
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => updatePdfFile(pdf.id, 'file', null)}
-                                    className="text-red-600 hover:text-red-800 p-1"
-                                    title="Hapus file"
-                                  >
-                                    <FiTrash2 className="w-4 h-4" />
-                                  </button>
-                                </div>
-                              </div>
-                            ) : (
-                              <label className="cursor-pointer block text-center">
-                                <FiUpload className="mx-auto h-8 w-8 text-gray-400 mb-2" />
-                                <span className="text-sm text-gray-600">Upload PDF</span>
-                                <input
-                                  type="file"
-                                  accept=".pdf"
-                                  onChange={(e) => {
-                                    const file = e.target.files?.[0];
-                                    if (file) handlePdfFileChange(pdf.id, file);
-                                  }}
-                                  className="hidden"
-                                />
-                                <p className="text-xs text-gray-500 mt-1">PDF up to 10MB</p>
-                              </label>
-                            )}
+                              ) : (
+                                <label className="cursor-pointer block text-center">
+                                  <FiUpload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                                  <span className="text-sm font-medium text-gray-700">Upload PDF</span>
+                                  <input
+                                    type="file"
+                                    accept=".pdf"
+                                    onChange={(e) => {
+                                      const file = e.target.files?.[0];
+                                      if (file) handlePdfFileChange(pdf.id, file);
+                                    }}
+                                    className="hidden"
+                                  />
+                                  <p className="text-xs text-gray-500 mt-2">PDF hingga 10MB</p>
+                                </label>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      </motion.div>
-                    ))}
+                        </motion.div>
+                      ))}
+                    </AnimatePresence>
                   </div>
                 )}
               </div>
 
-              {/* Submit Button */}
-              <div className="flex justify-end gap-4 pt-6 border-t">
+              {/* Submit Buttons */}
+              <div className="flex flex-col sm:flex-row justify-end gap-4 pt-6 border-t border-gray-200">
                 <Link
                   href="/instruktur/course"
-                  className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="px-6 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors text-center"
                 >
                   Batal
                 </Link>
                 <button
                   type="submit"
                   disabled={loading}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg disabled:opacity-50 transition-colors flex items-center gap-2"
+                  className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white px-8 py-3 rounded-xl disabled:opacity-50 transition-all duration-300 flex items-center justify-center gap-2 shadow-lg"
                 >
                   {loading ? (
                     <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
                       Menyimpan...
                     </>
                   ) : (
-                    'Simpan Kursus'
+                    <>
+                      <FiSave className="w-4 h-4" />
+                      Simpan Kursus
+                    </>
                   )}
                 </button>
               </div>
             </form>
-          </div>
+          </motion.div>
         </motion.div>
       </div>
     </div>
