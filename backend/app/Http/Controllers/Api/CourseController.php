@@ -34,6 +34,7 @@ class CourseController extends Controller
         ], 200);
     }
 
+
     /**
      * Get Course By Owner
      * @return JsonResponse|mixed
@@ -53,7 +54,7 @@ class CourseController extends Controller
     /**
      * Create a new course.
      *
-     * @param CourseRequest $request
+     * @param CourseStoreRequest $request
      * @return JsonResponse
      */
     public function store(CourseStoreRequest $request): JsonResponse
@@ -98,7 +99,7 @@ class CourseController extends Controller
     /**
      * Update an existing course.
      *
-     * @param CourseRequest $request
+     * @param CourseUpdateRequest $request
      * @param Course $course
      * @return JsonResponse
      */

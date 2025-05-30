@@ -620,3 +620,127 @@ _All endpoints require authentication and are restricted to instructors._
 #### Response (Success - 200 OK):
 
 Returns the PDF file as a downloadable resource.
+
+---
+
+## Purchase API
+
+_All endpoints require authentication._
+
+### Get All Purchases
+
+-   **URL:** `/api/purchases`
+-   **Method:** `GET`
+-   **Headers:**
+
+    ```
+    Authorization: Bearer {token}
+    Content-Type: application/json
+    ```
+
+#### Response (Success - 200 OK):
+
+```json
+{
+    "purchases": [
+        {
+            "id": 1,
+            "instructor_id": 3,
+            "title": "Kursus Pemrograman Lanjutan",
+            "description": "testing deskripsi",
+            "price": "1980.00",
+            "thumbnail": "thumbnails/UCI0vl6oux3mW3w2REzOL2gIntjxMPaab2JxC2bC.png",
+            "is_published": 1,
+            "created_at": "2025-05-21T09:36:40.000000Z",
+            "updated_at": "2025-05-26T04:14:44.000000Z",
+            "pivot": {
+                "user_id": 4,
+                "course_id": 1,
+                "purchased_at": "2025-05-30 11:18:41",
+                "created_at": "2025-05-30T11:18:41.000000Z",
+                "updated_at": "2025-05-30T11:18:41.000000Z"
+            },
+            "instructor": {
+                "id": 3,
+                "name": "instruktur",
+                "email": "instruktur@example.test",
+                "email_verified_at": null,
+                "created_at": "2025-05-21T06:06:24.000000Z",
+                "updated_at": "2025-05-21T06:06:24.000000Z",
+                "role": "instruktur"
+            },
+            "categories": [
+                {
+                    "id": 1,
+                    "name": "PHP",
+                    "created_at": "2025-05-21T06:30:07.000000Z",
+                    "updated_at": "2025-05-21T06:30:07.000000Z",
+                    "pivot": {
+                        "course_id": 1,
+                        "category_id": 1
+                    }
+                },
+                {
+                    "id": 2,
+                    "name": "Laravel",
+                    "created_at": "2025-05-21T06:30:11.000000Z",
+                    "updated_at": "2025-05-21T06:30:11.000000Z",
+                    "pivot": {
+                        "course_id": 1,
+                        "category_id": 2
+                    }
+                },
+                {
+                    "id": 3,
+                    "name": "Testing",
+                    "created_at": "2025-05-21T06:30:15.000000Z",
+                    "updated_at": "2025-05-21T06:30:15.000000Z",
+                    "pivot": {
+                        "course_id": 1,
+                        "category_id": 3
+                    }
+                }
+            ]
+        }
+    ]
+}
+```
+
+---
+
+### Create Purchase
+
+-   **URL:** `/api/purchases`
+-   **Method:** `POST`
+-   **Headers:**
+
+    ```
+    Authorization: Bearer {token}
+    Content-Type: application/json
+    ```
+
+#### Request Body:
+
+```json
+{
+  "course_id": integer
+}
+```
+
+#### Response (Success - 201 Created):
+
+```json
+{
+    "message": "Course purchased successfully",
+    "purchase": {
+        "user_id": 4,
+        "course_id": 1,
+        "purchased_at": "2025-05-30T11:21:55.214531Z",
+        "updated_at": "2025-05-30T11:21:55.000000Z",
+        "created_at": "2025-05-30T11:21:55.000000Z",
+        "id": 2
+    }
+}
+```
+
+---

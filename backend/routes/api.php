@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\CourseController;
 use App\Http\Controllers\Api\PdfController;
+use App\Http\Controllers\Api\PurchaseController;
 use App\Http\Controllers\Api\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -28,7 +29,7 @@ Route::middleware(['auth:sanctum'])->prefix('users')->name('api.users.')->group(
 Route::middleware(['auth:sanctum'])->prefix('categories')->name('api.categories.')->group(function () {
     Route::get('/', [CategoryController::class, 'index'])->name('index');
     Route::post('/', [CategoryController::class, 'store'])->middleware('admin')->name('store');
-    Route::get('/{id}', [CategoryController::class, 'show'])->middleware('admin')->name('show');
+    Route::get('/{id}', [CategoryController::class, 'show'])->name('show');
     Route::put('/{id}', [CategoryController::class, 'update'])->middleware('admin')->name('update');
     Route::delete('/{id}', [CategoryController::class, 'destroy'])->middleware('admin')->name('destroy');
 });
@@ -37,6 +38,7 @@ Route::middleware(['auth:sanctum'])->prefix('categories')->name('api.categories.
 Route::middleware(['auth:sanctum'])->group(function () {
     // Course Routes
     Route::get('/courses', [CourseController::class, 'index'])->name('api.courses.index');
+
     Route::get('/courses/owner', [CourseController::class, 'getCourseByOwner'])->middleware('instruktur');
     Route::post('/courses', [CourseController::class, 'store'])->middleware('instruktur')->name('api.courses.store');
     Route::get('/courses/{course}', [CourseController::class, 'show'])->name('api.courses.show');
@@ -48,6 +50,10 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/courses/{id}/upload', [PdfController::class, 'upload'])->middleware('instruktur')->name('api.pdfs.upload');
     Route::get('/pdfs/{id}/download', [PdfController::class, 'downloadById'])->name('api.pdfs.download');
     Route::put('/pdfs/{id}/update', [PdfController::class, 'update'])->middleware('instruktur')->name('api.pdfs.update');
-    Route::delete('/pdfs/{id}', [PdfController::class, 'destroy'])->middleware('instruktur')->name('api.pdfs.destroy');
-    
+    Route::delete('/pdfs/{id}', [PdfController::class, 'destroy'])->middleware('instruktur')->name('api.pdfs.destroy'); 
+});
+
+Route::middleware(['auth:sanctum'])->prefix('purchases')->group(function () {
+    Route::post('/', [PurchaseController::class, 'store'])->name('api.purchases.store');      // beli course
+    Route::get('/', [PurchaseController::class, 'index'])->name('api.purchases.index');       // list course yang sudah dibeli user
 });

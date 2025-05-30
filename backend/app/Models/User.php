@@ -52,4 +52,18 @@ class User extends Authenticatable
     {
         return $this->hasMany(Course::class);
     }
+
+    // User yang membeli course lewat tabel purchases (many-to-many)
+    public function purchasedCourses()
+    {
+        return $this->belongsToMany(Course::class, 'purchases', 'user_id', 'course_id')
+            ->withPivot('purchased_at')
+            ->withTimestamps();
+    }
+
+    // Relasi ke model Purchase (opsional, kalau butuh akses purchase langsung)
+    public function purchases()
+    {
+        return $this->hasMany(Purchase::class);
+    }
 }
